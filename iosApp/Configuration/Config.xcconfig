@@ -1,0 +1,7 @@
+TEAM_ID=
+
+PRODUCT_NAME=Gong Multiplatform
+PRODUCT_BUNDLE_IDENTIFIER=com.sky31.gongmultiplatform.GongMultiplatform$(TEAM_ID)
+
+CURRENT_PROJECT_VERSION=1
+MARKETING_VERSION=1.0

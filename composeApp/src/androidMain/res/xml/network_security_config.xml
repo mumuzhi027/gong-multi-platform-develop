@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">gong.leocoding.online</domain>
+        <domain includeSubdomains="true">apk.leocoding.online</domain>
+        <domain includeSubdomains="true">192.168.1.107</domain>
+        <domain includeSubdomains="true">111.230.116.67</domain>
+        <domain includeSubdomains="true">101.43.27.78</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,204 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "fe7b44dae180bc2dab6d5a0ce4fa794e",
+    "entities": [
+      {
+        "tableName": "academicEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` INTEGER, `total_rank` TEXT, `compulsory_rank` TEXT, `major_score` TEXT, `minor_score` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalRank",
+            "columnName": "total_rank",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "compulsoryRank",
+            "columnName": "compulsory_rank",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "majorScore",
+            "columnName": "major_score",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "minorScore",
+            "columnName": "minor_score",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        }
+      },
+      {
+        "tableName": "courseEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` INTEGER NOT NULL, `courses` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "courses",
+            "columnName": "courses",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        }
+      },
+      {
+        "tableName": "configEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` INTEGER, `global_config` TEXT, `functional_config` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "globalConfig",
+            "columnName": "global_config",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "functionalConfig",
+            "columnName": "functional_config",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        }
+      },
+      {
+        "tableName": "examEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `exams` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exams",
+            "columnName": "exams",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "publicEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `today_classroom` TEXT, `tomorrow_classroom` TEXT, `calendar` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "todayClassroom",
+            "columnName": "today_classroom",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tomorrowClassroom",
+            "columnName": "tomorrow_classroom",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "calendar",
+            "columnName": "calendar",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "userInfoEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`student_id` TEXT NOT NULL, `name` TEXT, `gender` TEXT, `birthday` TEXT, `major` TEXT, `class_` TEXT, `entrance_day` TEXT, PRIMARY KEY(`student_id`))",
+        "fields": [
+          {
+            "fieldPath": "studentID",
+            "columnName": "student_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gender",
+            "columnName": "gender",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "birthday",
+            "columnName": "birthday",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "major",
+            "columnName": "major",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clazz",
+            "columnName": "class_",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "entranceDay",
+            "columnName": "entrance_day",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "student_id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fe7b44dae180bc2dab6d5a0ce4fa794e')"
+    ]
+  }
+}
