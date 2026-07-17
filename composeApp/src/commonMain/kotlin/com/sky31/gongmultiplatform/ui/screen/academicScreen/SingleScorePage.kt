@@ -24,8 +24,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sky31.gongmultiplatform.model.ScoreData
-import com.sky31.gongmultiplatform.util.chineseNumberMap
-import kotlin.math.floor
 
 @Composable
 fun SingleScorePage(
@@ -34,8 +32,7 @@ fun SingleScorePage(
 ) {
     val compulsoryScoreList = scoreList.filter { scoreElem -> scoreElem.type == "必修" }
     val optionalScoreList = scoreList.filter { scoreElem -> scoreElem.type == "选修" }
-    val termStr =
-        "大${chineseNumberMap[floor((term - 1) / 2f + 1).toInt()]}${if (term % 2 == 1) "上" else "下"}"
+    val crossCourseScoreList = scoreList.filter { scoreElem -> scoreElem.type == "跨学科选修" }
 
     Box(
         modifier = Modifier
@@ -51,7 +48,7 @@ fun SingleScorePage(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = termStr,
+                text = academicTermLabel(term),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 25.sp,
                 fontWeight = FontWeight(800),
@@ -71,8 +68,30 @@ fun SingleScorePage(
                     scoreList = optionalScoreList
                 )
             }
+
+            if (crossCourseScoreList.isNotEmpty()) {
+                ScorePageFragment(
+                    title = "跨学科选修",
+                    scoreList = crossCourseScoreList
+                )
+            }
         }
     }
+}
+
+internal fun academicTermLabel(term: Int): String {
+    if (term <= 0) return "未知学期"
+
+    val grade = (term + 1) / 2
+    val gradeLabel = when (grade) {
+        1 -> "一"
+        2 -> "二"
+        3 -> "三"
+        4 -> "四"
+        5 -> "五"
+        else -> grade.toString()
+    }
+    return "大$gradeLabel${if (term % 2 == 1) "上" else "下"}"
 }
 
 @Composable
