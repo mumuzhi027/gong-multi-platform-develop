@@ -9,6 +9,7 @@ import (
 
 type InformationService[V any] interface {
 	GetInfo(studentID string) (*V, error)
+	RefreshInfo(studentID string) (*V, error)
 	submitUpdateTask(studentID string)
 }
 
@@ -71,6 +72,22 @@ func (p *AbsInfoService[V]) GetInfo(studentID string) (*V, error) {
 		err = fmt.Errorf("cache updating")
 	}
 
+	if !hasUsableCache(item) {
+		return nil, err
+	}
+	return &item.data, err
+}
+
+// RefreshInfo forces a new upstream fetch even while the current cache is valid.
+// Callers should poll GetInfo afterwards; it returns "cache updating" until the
+// submitted refresh has replaced the cached value.
+func (p *AbsInfoService[V]) RefreshInfo(studentID string) (*V, error) {
+	item := p.getData(studentID)
+	if p.checker.StatusOf(item) != Updating {
+		p.submitUpdateTask(studentID)
+	}
+
+	err := fmt.Errorf("cache updating")
 	if !hasUsableCache(item) {
 		return nil, err
 	}

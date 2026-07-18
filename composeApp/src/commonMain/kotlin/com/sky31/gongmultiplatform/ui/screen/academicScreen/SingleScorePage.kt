@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sky31.gongmultiplatform.model.ScoreData
+import kotlin.math.abs
+import kotlin.math.round
 
 @Composable
 fun SingleScorePage(
@@ -58,7 +60,8 @@ fun SingleScorePage(
             if (compulsoryScoreList.isNotEmpty()) {
                 ScorePageFragment(
                     title = "必修",
-                    scoreList = compulsoryScoreList
+                    scoreList = compulsoryScoreList,
+                    weightedAverage = calculateCompulsoryWeightedAverage(compulsoryScoreList)
                 )
             }
 
@@ -97,7 +100,8 @@ internal fun academicTermLabel(term: Int): String {
 @Composable
 fun ScorePageFragment(
     title: String,
-    scoreList: List<ScoreData.ScoreElem>
+    scoreList: List<ScoreData.ScoreElem>,
+    weightedAverage: Double? = null
 ) {
 
     Column(
@@ -158,6 +162,86 @@ fun ScorePageFragment(
 
         scoreList.forEach { scoreElem ->
             SingleScore(scoreElem)
+        }
+
+        weightedAverage?.let {
+            WeightedAverageScore(it)
+        }
+    }
+}
+
+internal fun calculateCompulsoryWeightedAverage(
+    scoreList: List<ScoreData.ScoreElem>
+): Double? {
+    val compulsoryScores = scoreList.mapNotNull { scoreElem ->
+        if (scoreElem.type != "必修") return@mapNotNull null
+
+        val score = scoreValue(scoreElem.score) ?: return@mapNotNull null
+        val credit = scoreElem.credit.toDoubleOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
+        score to credit
+    }
+    val totalCredit = compulsoryScores.sumOf { it.second }
+    if (totalCredit == 0.0) return null
+
+    return compulsoryScores.sumOf { (score, credit) -> score * credit } / totalCredit
+}
+
+internal fun scoreValue(rawScore: String): Double? {
+    rawScore.trim().toDoubleOrNull()?.let { return it }
+
+    return when (rawScore.trim()) {
+        "优", "优秀" -> 95.0
+        "良", "良好" -> 93.0
+        "中", "中等" -> 73.0
+        "及格", "合格" -> 62.0
+        "不及格", "不合格" -> 30.0
+        else -> null
+    }
+}
+
+internal fun formatWeightedAverage(value: Double): String {
+    val scaled = round(value * 100).toLong()
+    val integerPart = scaled / 100
+    val decimalPart = abs(scaled % 100).toString().padStart(2, '0')
+    return "$integerPart.$decimalPart"
+}
+
+@Composable
+private fun WeightedAverageScore(value: Double) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+    ) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                modifier = Modifier.weight(3f),
+                text = "加权平均分",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight(700),
+                fontSize = 16.sp
+            )
+            Text(
+                modifier = Modifier.weight(1f),
+                text = formatWeightedAverage(value),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight(800),
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

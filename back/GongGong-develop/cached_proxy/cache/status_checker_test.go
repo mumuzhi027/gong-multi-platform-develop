@@ -25,6 +25,12 @@ func TestIntervalStatusChecker_StatusOf(t *testing.T) {
 			expected: Valid,
 		},
 		{
+			name:     "Valid cache has a forced refresh in progress",
+			updateAt: time.Now().Add(-1 * time.Second),
+			submitAt: time.Now(),
+			expected: Updating,
+		},
+		{
 			name:     "Update time expired, submit time expired",
 			updateAt: time.Now().Add(-3 * time.Second),
 			submitAt: time.Now().Add(-4 * time.Second),
@@ -69,6 +75,12 @@ func TestDailyStatusChecker_StatusOf(t *testing.T) {
 			updateAt: time.Now().Add(-1 * time.Second),
 			submitAt: time.Now().Add(-4 * time.Second),
 			expected: Valid,
+		},
+		{
+			name:     "Valid daily cache has a forced refresh in progress",
+			updateAt: time.Now().Add(-1 * time.Second),
+			submitAt: time.Now(),
+			expected: Updating,
 		},
 		{
 			name:     "Update time expired, submit time expired",

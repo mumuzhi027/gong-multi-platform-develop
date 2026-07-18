@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!--
+      Android 11 及以下只备份离线 Room 数据库。
+      SharedPreferences 中包含登录 token，必须排除在系统备份之外。
+    -->
+    <include domain="database" path="." />
+</full-backup-content>

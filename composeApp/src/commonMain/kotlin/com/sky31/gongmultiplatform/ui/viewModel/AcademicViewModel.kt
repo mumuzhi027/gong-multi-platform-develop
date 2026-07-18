@@ -65,7 +65,7 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    suspend fun update() {
+    suspend fun update(forceRefresh: Boolean = false) {
         _minorAcademicInfoState.value = DataState.Loading
         _majorAcademicInfoState.value = DataState.Loading
         _compulsoryRankState.value = DataState.Loading
@@ -73,10 +73,10 @@ class AcademicViewModel : ViewModel(), KoinComponent {
 
         val results = coroutineScope {
             listOf(
-                async { updateMajorAcademicInfoWithRetry() },
-                async { updateMinorAcademicInfoWithRetry() },
-                async { updateCompulsoryRankWithRetry() },
-                async { updateTotalRankWithRetry() }
+                async { updateMajorAcademicInfoWithRetry(forceRefresh) },
+                async { updateMinorAcademicInfoWithRetry(forceRefresh) },
+                async { updateCompulsoryRankWithRetry(forceRefresh) },
+                async { updateTotalRankWithRetry(forceRefresh) }
             ).awaitAll()
         }
 
@@ -92,8 +92,8 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    suspend fun updateMajorAcademicInfo(): DataState {
-        return when (val result = academicRepository.getMajorAcademicInfo()) {
+    suspend fun updateMajorAcademicInfo(forceRefresh: Boolean = false): DataState {
+        return when (val result = academicRepository.getMajorAcademicInfo(forceRefresh)) {
             is NetworkResult.Success -> {
                 academicDataRepository.updateAcademicData(
                     majorScore = result.data
@@ -108,13 +108,14 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    private suspend fun updateMajorAcademicInfoWithRetry(): DataState {
+    private suspend fun updateMajorAcademicInfoWithRetry(forceRefresh: Boolean): DataState {
+        var firstAttempt = true
         return retryExpiredDataState(
             maxRetryTimes = SCORE_MAX_RETRY_TIMES,
             retryIntervalMillis = SCORE_RETRY_INTERVAL,
             finalErrorMessage = "成绩明细生成较慢，请稍后下拉刷新"
         ) {
-            updateMajorAcademicInfo()
+            updateMajorAcademicInfo(forceRefresh && firstAttempt).also { firstAttempt = false }
         }
     }
 
@@ -124,8 +125,8 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    suspend fun updateMinorAcademicInfo(): DataState {
-        return when (val result = academicRepository.getMinorAcademicInfo()) {
+    suspend fun updateMinorAcademicInfo(forceRefresh: Boolean = false): DataState {
+        return when (val result = academicRepository.getMinorAcademicInfo(forceRefresh)) {
             is NetworkResult.Success -> {
                 academicDataRepository.updateAcademicData(
                     minorScore = result.data
@@ -140,13 +141,14 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    private suspend fun updateMinorAcademicInfoWithRetry(): DataState {
+    private suspend fun updateMinorAcademicInfoWithRetry(forceRefresh: Boolean): DataState {
+        var firstAttempt = true
         return retryExpiredDataState(
             maxRetryTimes = SCORE_MAX_RETRY_TIMES,
             retryIntervalMillis = SCORE_RETRY_INTERVAL,
             finalErrorMessage = "辅修成绩生成较慢，请稍后下拉刷新"
         ) {
-            updateMinorAcademicInfo()
+            updateMinorAcademicInfo(forceRefresh && firstAttempt).also { firstAttempt = false }
         }
     }
 
@@ -156,8 +158,8 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    suspend fun updateTotalRank(): DataState {
-        return when (val result = academicRepository.getTotalRank()) {
+    suspend fun updateTotalRank(forceRefresh: Boolean = false): DataState {
+        return when (val result = academicRepository.getTotalRank(forceRefresh)) {
             is NetworkResult.Success -> {
                 academicDataRepository.updateAcademicData(
                     totalRank = result.data
@@ -172,13 +174,14 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    private suspend fun updateTotalRankWithRetry(): DataState {
+    private suspend fun updateTotalRankWithRetry(forceRefresh: Boolean): DataState {
+        var firstAttempt = true
         return retryExpiredDataState(
             maxRetryTimes = TOTAL_RANK_MAX_RETRY_TIMES,
             retryIntervalMillis = TOTAL_RANK_RETRY_INTERVAL,
             finalErrorMessage = "排名生成较慢，请稍后下拉刷新"
         ) {
-            updateTotalRank()
+            updateTotalRank(forceRefresh && firstAttempt).also { firstAttempt = false }
         }
     }
 
@@ -188,8 +191,8 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    suspend fun updateCompulsoryRank(): DataState {
-        return when (val result = academicRepository.getCompulsoryRank()) {
+    suspend fun updateCompulsoryRank(forceRefresh: Boolean = false): DataState {
+        return when (val result = academicRepository.getCompulsoryRank(forceRefresh)) {
             is NetworkResult.Success -> {
                 academicDataRepository.updateAcademicData(
                     compulsoryRank = result.data
@@ -204,13 +207,14 @@ class AcademicViewModel : ViewModel(), KoinComponent {
         }
     }
 
-    private suspend fun updateCompulsoryRankWithRetry(): DataState {
+    private suspend fun updateCompulsoryRankWithRetry(forceRefresh: Boolean): DataState {
+        var firstAttempt = true
         return retryExpiredDataState(
             maxRetryTimes = COMPULSORY_RANK_MAX_RETRY_TIMES,
             retryIntervalMillis = COMPULSORY_RANK_RETRY_INTERVAL,
             finalErrorMessage = "必修排名生成较慢，请稍后下拉刷新"
         ) {
-            updateCompulsoryRank()
+            updateCompulsoryRank(forceRefresh && firstAttempt).also { firstAttempt = false }
         }
     }
 

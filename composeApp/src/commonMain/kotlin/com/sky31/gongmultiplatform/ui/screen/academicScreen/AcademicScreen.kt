@@ -101,7 +101,12 @@ fun AcademicScreen() {
         onRefresh = {
             scope.launch {
                 refreshing = true
-                viewModel.update()
+                if (TokenState.requestVerificationIfOffline()) {
+                    refreshing = false
+                    return@launch
+                }
+
+                viewModel.update(forceRefresh = true)
                 refreshing = false
             }
         },

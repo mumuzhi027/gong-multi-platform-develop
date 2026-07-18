@@ -6,11 +6,11 @@ import com.sky31.gongmultiplatform.util.NetworkResult
 
 interface AcademicRepository {
 
-    suspend fun getTotalRank(): NetworkResult<RankData>
+    suspend fun getTotalRank(forceRefresh: Boolean = false): NetworkResult<RankData>
 
-    suspend fun getCompulsoryRank(): NetworkResult<RankData>
+    suspend fun getCompulsoryRank(forceRefresh: Boolean = false): NetworkResult<RankData>
 
-    suspend fun getMajorAcademicInfo(): NetworkResult<ScoreData>
+    suspend fun getMajorAcademicInfo(forceRefresh: Boolean = false): NetworkResult<ScoreData>
 
-    suspend fun getMinorAcademicInfo(): NetworkResult<ScoreData>
+    suspend fun getMinorAcademicInfo(forceRefresh: Boolean = false): NetworkResult<ScoreData>
 }

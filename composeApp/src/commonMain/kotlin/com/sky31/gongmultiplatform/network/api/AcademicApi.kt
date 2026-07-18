@@ -4,11 +4,11 @@ import io.ktor.client.statement.HttpResponse
 
 interface AcademicApi {
 
-    suspend fun getMajorAcademicInfo(): HttpResponse
+    suspend fun getMajorAcademicInfo(forceRefresh: Boolean = false): HttpResponse
 
-    suspend fun getMinorAcademicInfo(): HttpResponse
+    suspend fun getMinorAcademicInfo(forceRefresh: Boolean = false): HttpResponse
 
-    suspend fun getTotalRank(): HttpResponse
+    suspend fun getTotalRank(forceRefresh: Boolean = false): HttpResponse
 
-    suspend fun getCompulsoryRank(): HttpResponse
+    suspend fun getCompulsoryRank(forceRefresh: Boolean = false): HttpResponse
 }

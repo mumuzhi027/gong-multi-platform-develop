@@ -124,7 +124,13 @@ func (c *InfoGetter[V]) GetInfo(w http.ResponseWriter, r *http.Request) {
 	if account == nil {
 		return
 	}
-	info, err := c.info.GetInfo(account.AccountID())
+	var info *V
+	var err error
+	if r.URL.Query().Get("refresh") == "true" {
+		info, err = c.info.RefreshInfo(account.AccountID())
+	} else {
+		info, err = c.info.GetInfo(account.AccountID())
+	}
 	statusCode, resp := newInfoResponse(info, err)
 	w.WriteHeader(statusCode)
 	err = json.NewEncoder(w).Encode(resp)

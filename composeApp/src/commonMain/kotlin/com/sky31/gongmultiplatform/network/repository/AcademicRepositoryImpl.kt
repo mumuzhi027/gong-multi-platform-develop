@@ -12,8 +12,8 @@ class AcademicRepositoryImpl(
 ): AcademicRepository {
     private val api = AcademicApiImpl(client)
 
-    override suspend fun getMajorAcademicInfo(): NetworkResult<ScoreData> {
-        val result = safeApiCall<ScoreData> { api.getMajorAcademicInfo() }
+    override suspend fun getMajorAcademicInfo(forceRefresh: Boolean): NetworkResult<ScoreData> {
+        val result = safeApiCall<ScoreData> { api.getMajorAcademicInfo(forceRefresh) }
 
         return when(result) {
             is NetworkResult.Success ->
@@ -26,8 +26,8 @@ class AcademicRepositoryImpl(
         }
     }
 
-    override suspend fun getMinorAcademicInfo(): NetworkResult<ScoreData> {
-        val result = safeApiCall<ScoreData> { api.getMinorAcademicInfo() }
+    override suspend fun getMinorAcademicInfo(forceRefresh: Boolean): NetworkResult<ScoreData> {
+        val result = safeApiCall<ScoreData> { api.getMinorAcademicInfo(forceRefresh) }
 
         return when(result) {
             is NetworkResult.Success ->
@@ -40,8 +40,8 @@ class AcademicRepositoryImpl(
         }
     }
 
-    override suspend fun getTotalRank(): NetworkResult<RankData> {
-        val result = safeApiCall<RankData> { api.getTotalRank() }
+    override suspend fun getTotalRank(forceRefresh: Boolean): NetworkResult<RankData> {
+        val result = safeApiCall<RankData> { api.getTotalRank(forceRefresh) }
 
         return when(result) {
             is NetworkResult.Success ->
@@ -54,8 +54,8 @@ class AcademicRepositoryImpl(
         }
     }
 
-    override suspend fun getCompulsoryRank(): NetworkResult<RankData> {
-        val result = safeApiCall<RankData> { api.getCompulsoryRank() }
+    override suspend fun getCompulsoryRank(forceRefresh: Boolean): NetworkResult<RankData> {
+        val result = safeApiCall<RankData> { api.getCompulsoryRank(forceRefresh) }
 
         return when(result) {
             is NetworkResult.Success ->

@@ -42,9 +42,10 @@ func TestPersonalInformationService_GetInfo(t *testing.T) {
 
 	// Test cache valid
 	t.Run("Cache valid", func(t *testing.T) {
+		now := time.Now()
 		service.(*AbsInfoService[string]).setData("student1", &cacheItem[string]{
-			updateAt: time.Now(),
-			submitAt: time.Now(),
+			updateAt: now,
+			submitAt: now.Add(-time.Second),
 			data:     "valid info",
 		})
 		data, err := service.GetInfo("student1")
@@ -106,9 +107,10 @@ func TestPublicInformationService_GetInfo(t *testing.T) {
 
 	// Test cache valid
 	t.Run("Cache valid", func(t *testing.T) {
+		now := time.Now()
 		service.(*AbsInfoService[string]).setData("student1", &cacheItem[string]{
-			updateAt: time.Now(),
-			submitAt: time.Now(),
+			updateAt: now,
+			submitAt: now.Add(-time.Second),
 			data:     "valid info",
 		})
 		data, err := service.GetInfo("student1")

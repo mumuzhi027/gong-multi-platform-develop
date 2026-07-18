@@ -34,6 +34,9 @@ func (d *DailyStatusChecker[V]) StatusOf(item *cacheItem[V]) ItemStatus {
 	}
 
 	now := time.Now()
+	if item.submitAt.After(item.updateAt) && item.submitAt.Add(d.submitExpireInterval).After(now) {
+		return Updating
+	}
 	if sameCalendarDay(item.updateAt, now) {
 		return Valid
 	}
@@ -57,6 +60,11 @@ type IntervalStatusChecker[V any] struct {
 func (d *IntervalStatusChecker[V]) StatusOf(item *cacheItem[V]) ItemStatus {
 	if item == nil {
 		return NotFound
+	}
+	// A newer submit time means a forced refresh is currently replacing an
+	// otherwise still-valid cache entry.
+	if item.submitAt.After(item.updateAt) && item.submitAt.Add(d.submitExpireInterval).After(time.Now()) {
+		return Updating
 	}
 	if item.updateAt.Add(d.updateExpireInterval).After(time.Now()) {
 		return Valid

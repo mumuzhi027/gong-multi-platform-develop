@@ -12,16 +12,16 @@ class AcademicApiImpl(
     private val client: HttpClient
 ): AcademicApi {
 
-    override suspend fun getMajorAcademicInfo(): HttpResponse =
-        client.get(MajorAcademicInfo())
+    override suspend fun getMajorAcademicInfo(forceRefresh: Boolean): HttpResponse =
+        client.get(MajorAcademicInfo(refresh = forceRefresh))
 
 
-    override suspend fun getMinorAcademicInfo(): HttpResponse =
-        client.get(MinorAcademicInfo())
+    override suspend fun getMinorAcademicInfo(forceRefresh: Boolean): HttpResponse =
+        client.get(MinorAcademicInfo(refresh = forceRefresh))
 
-    override suspend fun getTotalRank(): HttpResponse =
-        client.get(TotalRank())
+    override suspend fun getTotalRank(forceRefresh: Boolean): HttpResponse =
+        client.get(TotalRank(refresh = forceRefresh))
 
-    override suspend fun getCompulsoryRank(): HttpResponse =
-        client.get(CompulsoryRank())
+    override suspend fun getCompulsoryRank(forceRefresh: Boolean): HttpResponse =
+        client.get(CompulsoryRank(refresh = forceRefresh))
 }

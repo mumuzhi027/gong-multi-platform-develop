@@ -56,6 +56,11 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
         StatisticsType.Compulsory -> compulsoryRank
         StatisticsType.All -> totalRank
     }
+    val cumulativeCompulsoryWeightedAverage = remember(majorScore) {
+        majorScore?.scores
+            ?.let(::calculateCompulsoryWeightedAverage)
+            ?.let(::formatWeightedAverage)
+    }
 
     Box(
         modifier = Modifier
@@ -184,6 +189,13 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                             name = "年级专业排名",
                             value = formatRankValue(currentRank?.majorRank)
                         )
+
+                        if (statisticsType == StatisticsType.Compulsory) {
+                            AcademicSingleInfoBox(
+                                name = "加权平均分",
+                                value = cumulativeCompulsoryWeightedAverage
+                            )
+                        }
                     }
                 }
             }
