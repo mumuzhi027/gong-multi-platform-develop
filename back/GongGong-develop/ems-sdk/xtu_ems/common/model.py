@@ -161,6 +161,8 @@ class RankInfo(BaseModel):
     """班级排名"""
     major_rank: int = 1
     """专业排名"""
+    weighted_average_rank: int = 0
+    """加权平均成绩排名"""
     terms: list[str] = ""
     """学期"""
 

@@ -195,6 +195,11 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                                 name = "加权平均分",
                                 value = cumulativeCompulsoryWeightedAverage
                             )
+
+                            AcademicSingleInfoBox(
+                                name = "加权平均成绩排名",
+                                value = formatRankValue(compulsoryRank?.weightedAverageRank)
+                            )
                         }
                     }
                 }

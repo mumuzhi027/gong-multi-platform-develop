@@ -108,9 +108,10 @@ type ScoreBoard struct {
 }
 
 type Rank struct {
-	AverageScore string   `json:"average_score"`
-	Gpa          string   `json:"gpa"`
-	ClassRank    int      `json:"class_rank"`
-	MajorRank    int      `json:"major_rank"`
-	Terms        []string `json:"terms"`
+	AverageScore        string   `json:"average_score"`
+	Gpa                 string   `json:"gpa"`
+	ClassRank           int      `json:"class_rank"`
+	MajorRank           int      `json:"major_rank"`
+	WeightedAverageRank int      `json:"weighted_average_rank"`
+	Terms               []string `json:"terms"`
 }

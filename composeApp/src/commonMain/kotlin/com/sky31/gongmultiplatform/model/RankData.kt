@@ -14,5 +14,7 @@ data class RankData(
     // 专业排名
     @SerialName("major_rank") val majorRank: Int,
     // 学期
-    val terms: List<String>
+    val terms: List<String>,
+    // 加权平均成绩排名
+    @SerialName("weighted_average_rank") val weightedAverageRank: Int = 0
 )

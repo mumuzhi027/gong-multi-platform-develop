@@ -6,6 +6,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import Literal
 
+import bs4
 import pdfplumber
 
 from xtu_ems.common.exception import ServiceUnavailableException, SessionInvalidException
@@ -18,6 +19,7 @@ TRANSCRIPT_PREPARE_URL = "https://jw.xtu.edu.cn/jwglxt/bysxxcx/xscjzbdy_cxXsCoun
 TRANSCRIPT_EXPORT_URL = "https://jw.xtu.edu.cn/jwglxt/bysxxcx/xscjzbdy_dyList.html?gnmkdm=N558020"
 RANK_PAGE_URL = "https://jw.xtu.edu.cn/jwglxt/cjpmtj/cjpmtj_cxPjxfjdpmtjIndex.html?gnmkdm=N309104&layout=default"
 RANK_QUERY_URL = "https://jw.xtu.edu.cn/jwglxt/cjpmtj/cjpmtj_cxPjxfjdpmtjIndex.html?doType=query&gnmkdm=N309104"
+WEIGHTED_AVERAGE_RANK_URL = "https://jw.xtu.edu.cn/jwglxt/tmgl4/tmsq_cxTmsqIndex.html?gnmkdm=N104906&layout=default"
 RANK_QUERY_TIMEOUT_SECONDS = 60
 
 COLLEGE_LABELS = ("学院:", "\u701b\ufe42\u6acc:")
@@ -282,6 +284,38 @@ def parse_rank_payload(payload: dict) -> RankInfo:
     )
 
 
+def parse_weighted_average_rank(page_html: str) -> int:
+    soup = bs4.BeautifulSoup(page_html, "html.parser")
+    for label in soup.find_all("label"):
+        if "加权平均成绩排名" not in label.get_text(strip=True):
+            continue
+
+        container = label.parent
+        value = container.find("span", class_="form-control-static") if container else None
+        if value is None:
+            value = label.find_next("span", class_="form-control-static")
+
+        match = re.search(r"\d+", value.get_text(strip=True) if value else "")
+        if match:
+            return int(match.group(0))
+
+    raise ServiceUnavailableException(
+        "ZF EMS Weighted Average Rank Service",
+        "Weighted average rank is missing from page",
+    )
+
+
+async def weighted_average_rank_getter(session: HttpSessionHolder) -> int:
+    async with session.to_aiohttp_session() as http_session:
+        async with http_session.get(
+            url=WEIGHTED_AVERAGE_RANK_URL,
+            allow_redirects=False,
+        ) as response:
+            if response.status != 200:
+                raise SessionInvalidException("Failed to open weighted average rank page")
+            return parse_weighted_average_rank(await response.text())
+
+
 async def rank_getter_with_options(
     session: HttpSessionHolder,
     *,
@@ -332,13 +366,15 @@ async def rank_getter(session: HttpSessionHolder) -> RankInfo:
 
 
 async def compulsory_rank_getter(session: HttpSessionHolder) -> RankInfo:
-    return await rank_getter_with_options(
+    rank = await rank_getter_with_options(
         session,
         start_term="202012",
         end_term="",
         course_type="bx",
         time_marker="0",
     )
+    rank.weighted_average_rank = await weighted_average_rank_getter(session)
+    return rank
 
 
 async def empty_transcript_scoreboard(session: HttpSessionHolder) -> ScoreBoard:
