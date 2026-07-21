@@ -44,7 +44,10 @@ fun CustomScrollBox(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(end = if(scrollBarVisibility) 16.dp else 0.dp),
+                // Always reserve the scrollbar gutter. Making the content width depend on
+                // maxValue can create a layout loop near the overflow boundary: showing the
+                // scrollbar changes text wrapping, which can hide it again, and vice versa.
+                .padding(end = 16.dp),
             horizontalAlignment = horizontalAlignment
         ) {
             content()
@@ -75,6 +78,8 @@ fun VerticalScrollBar(
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
+            val maxValue = scrollState.maxValue
+            if (maxValue <= 0) return@Canvas
 
             drawRoundRect(
                 color = colorScheme.background,
@@ -83,9 +88,9 @@ fun VerticalScrollBar(
             )
 
             // thumb的高度
-            val proportion = size.height * (size.height / (size.height + scrollState.maxValue.toFloat()))
+            val proportion = size.height * (size.height / (size.height + maxValue.toFloat()))
 
-            val offset = (scrollState.value.toFloat() / scrollState.maxValue) * (size.height - proportion)
+            val offset = (scrollState.value.toFloat() / maxValue) * (size.height - proportion)
 
             drawRoundRect(
                 color = colorScheme.primary,
