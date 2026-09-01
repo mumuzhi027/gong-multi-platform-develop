@@ -1,0 +1,18 @@
+<script setup>
+import { WECHAT_SUBSCRIBE_TEMPLATE_IDS } from '../../config/env'
+function enter(){uni.reLaunch({url:'/pages/home/index'})}
+function requestNotification(){
+  // #ifdef MP-WEIXIN
+  if(!WECHAT_SUBSCRIBE_TEMPLATE_IDS.length){
+    uni.showModal({title:'开启通知',content:'当前小程序尚未配置订阅消息模板，可稍后在设置中开启。',showCancel:false,success:enter})
+    return
+  }
+  uni.requestSubscribeMessage({tmplIds:WECHAT_SUBSCRIBE_TEMPLATE_IDS,complete:enter})
+  // #endif
+  // #ifndef MP-WEIXIN
+  enter()
+  // #endif
+}
+</script>
+<template><view class="page notice-request"><view class="notice-content"><image src="/static/icons/notification_logo.png" mode="aspectFit"/><text class="notice-title">开启通知</text><text class="notice-desc">接收课程、考试的通知及更多内容。</text><button class="enable" @tap="requestNotification">开启通知</button><button class="later" @tap="enter">以后再说</button><text class="notice-foot">在"设置"中随时管理通知类别。</text></view></view></template>
+<style scoped lang="scss">.notice-request{display:flex;padding:var(--status-bar-height) 0 env(safe-area-inset-bottom);align-items:center;justify-content:center}.notice-content{display:flex;width:100%;flex-direction:column;align-items:center}.notice-content image{width:600rpx;height:240rpx}.notice-title{margin-top:100rpx;font-size:40rpx;font-weight:800}.notice-desc{margin-top:40rpx;font-size:30rpx}.enable,.later{min-height:0;padding:20rpx 60rpx;border-radius:60rpx;font-size:30rpx;line-height:1}.enable{margin-top:40rpx;color:#fff;background:#000}.later{margin-top:20rpx;color:#171717;background:transparent}.notice-foot{margin-top:200rpx;font-size:24rpx}</style>

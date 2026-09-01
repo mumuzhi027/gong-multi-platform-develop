@@ -1,0 +1,1 @@
+<view class="page settings data-v-b4180827"><view class="data-v-b4180827" bindtap="{{b}}"><image class="data-v-b4180827" src="{{a}}"/>通知管理</view><view class="data-v-b4180827" bindtap="{{d}}"><image class="data-v-b4180827" src="{{c}}"/>认证服务</view><view class="data-v-b4180827" bindtap="{{f}}"><image class="data-v-b4180827" src="{{e}}"/>检查更新</view></view>

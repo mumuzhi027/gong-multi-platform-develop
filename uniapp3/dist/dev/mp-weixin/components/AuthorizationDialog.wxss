@@ -1,0 +1,95 @@
+.auth-dialog-host.data-v-ff2bde40, .auth-dialog-mask.data-v-ff2bde40 {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+}
+.auth-dialog-host.data-v-ff2bde40 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-dialog-mask.data-v-ff2bde40 {
+  background: rgba(0, 0, 0, 0.34);
+}
+.auth-dialog.data-v-ff2bde40 {
+  position: relative;
+  z-index: 1001;
+  display: flex;
+  width: 80%;
+  padding: 40rpx 32rpx;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 28rpx;
+  background: #fff;
+}
+.dialog-title.data-v-ff2bde40 {
+  margin-bottom: 60rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+.dialog-user.data-v-ff2bde40 {
+  margin-bottom: 40rpx;
+  font-size: 52rpx;
+  font-weight: 800;
+}
+.password-box.data-v-ff2bde40 {
+  display: flex;
+  width: 100%;
+  height: 72rpx;
+  padding: 0 28rpx;
+  align-items: center;
+  border: 2rpx solid #969696;
+  border-radius: 60rpx;
+}
+.password-box input.data-v-ff2bde40 {
+  height: 68rpx;
+  flex: 1;
+  font-size: 32rpx;
+}
+.password-eye.data-v-ff2bde40 {
+  display: flex;
+  width: 44rpx;
+  height: 44rpx;
+  align-items: center;
+  justify-content: center;
+}
+.password-eye image.data-v-ff2bde40 {
+  width: 30rpx;
+  height: 30rpx;
+  opacity: 0.55;
+}
+.verify-button.data-v-ff2bde40 {
+  width: 100%;
+  height: 60rpx;
+  margin-top: 60rpx;
+  border-radius: 20rpx;
+  color: #000;
+  background: var(--primary);
+  font-size: 28rpx;
+  line-height: 60rpx;
+}
+.error-row.data-v-ff2bde40 {
+  display: flex;
+  width: 100%;
+  min-height: 48rpx;
+  margin-top: 20rpx;
+  align-items: flex-start;
+}
+.error-text.data-v-ff2bde40 {
+  min-width: 0;
+  flex: 1;
+  color: #e00000;
+  font-size: 26rpx;
+}
+.switch-account.data-v-ff2bde40, .offline-link.data-v-ff2bde40 {
+  color: var(--primary-strong);
+  font-size: 28rpx;
+  text-decoration: underline;
+}
+.switch-account.data-v-ff2bde40 {
+  margin-left: 16rpx;
+  white-space: nowrap;
+}
+.offline-link.data-v-ff2bde40 {
+  margin-top: 36rpx;
+}

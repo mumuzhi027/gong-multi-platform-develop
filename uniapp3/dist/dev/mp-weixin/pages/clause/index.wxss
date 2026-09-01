@@ -1,0 +1,36 @@
+.clause-page.data-v-88e6c74f {
+  padding: 26rpx 24rpx 50rpx;
+}
+.clause-card.data-v-88e6c74f {
+  padding: 40rpx 34rpx;
+}
+.clause-title.data-v-88e6c74f {
+  font-size: 42rpx;
+  font-weight: 900;
+}
+.update-time.data-v-88e6c74f {
+  margin-top: 10rpx;
+  color: #999;
+  font-size: 20rpx;
+}
+.section.data-v-88e6c74f {
+  margin-top: 38rpx;
+}
+.section-heading.data-v-88e6c74f {
+  font-size: 29rpx;
+  font-weight: 800;
+}
+.section-content.data-v-88e6c74f {
+  margin-top: 14rpx;
+  color: #555;
+  font-size: 24rpx;
+  line-height: 1.85;
+}
+.online-button.data-v-88e6c74f {
+  margin-top: 30rpx;
+  border-radius: 40rpx;
+  color: #24617e;
+  background: #dff2fd;
+  font-size: 24rpx;
+  line-height: 78rpx;
+}

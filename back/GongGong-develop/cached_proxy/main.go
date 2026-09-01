@@ -6,6 +6,10 @@ import (
 )
 
 func StartApiServer(port int) {
+	requestLogs, err := newRequestLogStore(ActivityDataDir, defaultRequestLogCapacity)
+	if err != nil {
+		panic(fmt.Errorf("initialize request logs: %w", err))
+	}
 	server := http.NewServeMux()
 	server.HandleFunc("/login", Login)
 	server.HandleFunc("/courses", CourseHandler.GetInfo)
@@ -22,9 +26,10 @@ func StartApiServer(port int) {
 	server.HandleFunc("/icalendar/courses", CoursesCalendarHandler.GetInfo)
 	server.HandleFunc("/icalendar/exams", ExamCalendarHandler.GetInfo)
 	server.HandleFunc("/icalendar", CalPage)
+	RegisterActivityRoutes(server, requestLogs)
 	fmt.Printf("Proxy Server URL: %s\n", SpiderUrl)
 	fmt.Printf("Starting server on :%d\n", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), server)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), requestLoggingMiddleware(server, requestLogs))
 	if err != nil {
 		fmt.Printf("failed to start server: %v\n", err)
 		return

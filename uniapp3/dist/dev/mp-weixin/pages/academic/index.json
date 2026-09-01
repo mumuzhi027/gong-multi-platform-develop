@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "app-nav": "../../components/AppNav",
+    "state-view": "../../components/StateView"
+  }
+}

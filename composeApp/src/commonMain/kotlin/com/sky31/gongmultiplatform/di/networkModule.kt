@@ -2,6 +2,7 @@ package com.sky31.gongmultiplatform.di
 
 import com.sky31.gongmultiplatform.network.HttpClientProvider
 import com.sky31.gongmultiplatform.network.repository.AcademicRepositoryImpl
+import com.sky31.gongmultiplatform.network.repository.ActivityRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.AuthRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.CourseRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.ExamRepositoryImpl
@@ -13,6 +14,7 @@ import org.koin.dsl.module
 val networkModule = module {
     single { HttpClientProvider }
     single<AcademicRepositoryImpl> { AcademicRepositoryImpl(get<HttpClientProvider>().client) }
+    single<ActivityRepositoryImpl> { ActivityRepositoryImpl(get<HttpClientProvider>().client) }
     single<ExamRepositoryImpl> { ExamRepositoryImpl(get<HttpClientProvider>().client) }
     single<CourseRepositoryImpl> { CourseRepositoryImpl(get<HttpClientProvider>().client) }
     single<PublicRepositoryImpl> { PublicRepositoryImpl(get<HttpClientProvider>().client) }

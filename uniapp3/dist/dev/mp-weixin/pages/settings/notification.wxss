@@ -1,0 +1,23 @@
+.config-page.data-v-0fb49f47 {
+  padding: 30rpx;
+}
+.config-row.data-v-0fb49f47 {
+  display: flex;
+  min-height: 112rpx;
+  padding: 12rpx 8rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+.config-row > view.data-v-0fb49f47 {
+  display: flex;
+  flex-direction: column;
+}
+.config-row text.data-v-0fb49f47 {
+  font-size: 36rpx;
+  font-weight: 800;
+}
+.config-row small.data-v-0fb49f47 {
+  margin-top: 8rpx;
+  color: #515151;
+  font-size: 24rpx;
+}

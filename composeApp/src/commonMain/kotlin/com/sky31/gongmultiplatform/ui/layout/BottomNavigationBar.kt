@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import gongmultiplatform.composeapp.generated.resources.Res
+import gongmultiplatform.composeapp.generated.resources.activity
 import gongmultiplatform.composeapp.generated.resources.classroom
 import gongmultiplatform.composeapp.generated.resources.grade
 import gongmultiplatform.composeapp.generated.resources.home
@@ -44,6 +45,12 @@ fun BottomNavigationBar(
     val toAcademicScreen = fun() {
         if(currentRoute !== "academic") {
             navController.navigate("academic")
+        }
+    }
+
+    val toActivityScreen = fun() {
+        if(currentRoute !== "activity") {
+            navController.navigate("activity")
         }
     }
 
@@ -80,6 +87,13 @@ fun BottomNavigationBar(
                 resource = Res.drawable.classroom,
                 title = "空教室",
                 onClick = toEmptyClassroom
+            )
+
+            BottomNavigationItem(
+                isSelected = currentRoute?.startsWith("activity") == true,
+                resource = Res.drawable.activity,
+                title = "活动",
+                onClick = toActivityScreen
             )
 
             BottomNavigationItem(

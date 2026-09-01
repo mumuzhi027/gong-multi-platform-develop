@@ -23,6 +23,8 @@ import com.sky31.gongmultiplatform.ui.component.drawer.UpdateNotificationDialog
 import com.sky31.gongmultiplatform.ui.component.rememberDialogState
 import com.sky31.gongmultiplatform.ui.component.drawer.MainScreenDrawer
 import com.sky31.gongmultiplatform.ui.screen.academicScreen.AcademicScreen
+import com.sky31.gongmultiplatform.ui.screen.activityScreen.ActivityScreen
+import com.sky31.gongmultiplatform.ui.screen.activityScreen.ActivityDetailScreen
 import com.sky31.gongmultiplatform.ui.screen.classroomScreen.ClassroomScreen
 import com.sky31.gongmultiplatform.ui.screen.mainScreen.MainScreen
 import com.sky31.gongmultiplatform.ui.viewModel.SettingViewModel
@@ -75,6 +77,12 @@ fun MainLayout() {
                     composable("home") {
                         MainScreen(
                             drawerState = drawerState,
+                            toActivityScreen = {
+                                navController.navigate("activity")
+                            },
+                            toActivityDetail = { activityId ->
+                                navController.navigate("activity/$activityId")
+                            },
                             toAcademicScreen = {
                                 navController.navigate("academic")
                             }
@@ -83,6 +91,21 @@ fun MainLayout() {
 
                     composable("emptyClassroom") {
                         ClassroomScreen()
+                    }
+
+                    composable("activity") {
+                        ActivityScreen(
+                            onActivityClick = { activityId ->
+                                navController.navigate("activity/$activityId")
+                            }
+                        )
+                    }
+
+                    composable("activity/{activityId}") { backStackEntry ->
+                        ActivityDetailScreen(
+                            activityId = backStackEntry.arguments?.getString("activityId").orEmpty(),
+                            onBack = { navController.popBackStack() }
+                        )
                     }
 
                     composable("academic") {

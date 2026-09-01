@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/home/index",
+    "pages/notification-request/index",
+    "pages/course/index",
+    "pages/classroom/index",
+    "pages/academic/index",
+    "pages/settings/index",
+    "pages/settings/notification",
+    "pages/settings/auth-service",
+    "pages/about/index",
+    "pages/clause/index"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "拱拱",
+    "navigationBarBackgroundColor": "#f1f1f1",
+    "backgroundColor": "#f1f1f1"
+  },
+  "usingComponents": {}
+}

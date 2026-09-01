@@ -28,6 +28,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	creds.Username = r.Form.Get("username")
 	creds.Password = r.Form.Get("password")
+	markRequestAudit(w, "login", creds.Username)
 	err = StudentService.SetStudent(creds.Username, creds.Password, true)
 	if err == nil {
 		token, err := AccountService.Login(creds.Username, creds.Password)

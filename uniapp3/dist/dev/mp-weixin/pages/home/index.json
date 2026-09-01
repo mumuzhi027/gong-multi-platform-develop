@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "app-nav": "../../components/AppNav",
+    "side-drawer": "../../components/SideDrawer",
+    "course-sheet": "../../components/CourseSheet"
+  }
+}

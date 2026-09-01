@@ -1,0 +1,33 @@
+.app-nav.data-v-d80c7d29 {
+  position: fixed;
+  z-index: 60;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  height: calc(126rpx + env(safe-area-inset-bottom));
+  padding: 10rpx 54rpx env(safe-area-inset-bottom);
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: 1rpx solid var(--line);
+  background: rgba(248, 248, 248, 0.96);
+}
+.nav-item.data-v-d80c7d29 {
+  display: flex;
+  width: 96rpx;
+  height: 96rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #363636;
+  font-size: 22rpx;
+  transition: transform 0.2s ease;
+}
+.nav-item.active.data-v-d80c7d29 {
+  color: var(--primary);
+}
+.nav-icon.data-v-d80c7d29 {
+  width: 38rpx;
+  height: 38rpx;
+  margin-bottom: 4rpx;
+}

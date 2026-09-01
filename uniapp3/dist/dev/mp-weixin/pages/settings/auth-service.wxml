@@ -1,0 +1,1 @@
+<view class="page config-page data-v-4c734b27"><view class="config-row data-v-4c734b27"><view class="data-v-4c734b27"><text class="data-v-4c734b27">重新认证</text><view class="data-v-4c734b27">当请求返回未授权状态时，弹出认证模块。</view></view><switch class="data-v-4c734b27" checked="{{a}}" color="#85cdfa" bindchange="{{b}}"/></view></view>

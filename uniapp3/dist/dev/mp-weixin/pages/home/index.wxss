@@ -1,0 +1,309 @@
+.home-page.data-v-2c5296db {
+  height: 100vh;
+  overflow: hidden;
+}
+.safe-head.data-v-2c5296db {
+  display: flex;
+  padding: calc(var(--status-bar-height) + 8rpx) 20rpx 10rpx;
+  align-items: center;
+}
+.menu-button.data-v-2c5296db {
+  display: flex;
+  width: 66rpx;
+  height: 66rpx;
+  align-items: center;
+  justify-content: center;
+}
+.menu-button image.data-v-2c5296db {
+  width: 56rpx;
+  height: 56rpx;
+}
+.main-info.data-v-2c5296db {
+  display: flex;
+  height: 152rpx;
+  margin-left: 2rpx;
+  padding: 28rpx;
+  flex: 1;
+  border-radius: 20rpx;
+  background: var(--primary);
+}
+.info-column.data-v-2c5296db {
+  display: flex;
+  height: 96rpx;
+  margin-left: 28rpx;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.info-top.data-v-2c5296db {
+  display: flex;
+  height: 58rpx;
+  align-items: center;
+}
+.weekday.data-v-2c5296db {
+  font-size: 42rpx;
+  font-weight: 800;
+}
+.week-text.data-v-2c5296db {
+  margin-left: 58rpx;
+  font-size: 27rpx;
+}
+.week-text text.data-v-2c5296db {
+  margin: 0 10rpx;
+  font-size: 48rpx;
+  font-weight: 800;
+}
+.date.data-v-2c5296db {
+  font-size: 30rpx;
+}
+.body.data-v-2c5296db {
+  display: flex;
+  height: calc(100vh - var(--status-bar-height) - 296rpx);
+  padding: 0 20rpx;
+  flex-direction: column;
+}
+.home-section.data-v-2c5296db {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.course-head.data-v-2c5296db, .exam-head.data-v-2c5296db {
+  display: flex;
+  min-height: 100rpx;
+  align-items: center;
+}
+.title.data-v-2c5296db {
+  font-size: 40rpx;
+  font-weight: 800;
+}
+.progress-ring.data-v-2c5296db {
+  display: flex;
+  width: 84rpx;
+  height: 84rpx;
+  margin: 0 32rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) var(--progress), var(--surface) 0);
+}
+.progress-ring view.data-v-2c5296db {
+  display: flex;
+  width: 44rpx;
+  height: 44rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--background);
+  font-size: 46rpx;
+  font-weight: 700;
+}
+.remain.data-v-2c5296db {
+  color: #515151;
+  font-size: 27rpx;
+}
+.remain text.data-v-2c5296db {
+  margin: 0 8rpx;
+  color: #171717;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+.spacer.data-v-2c5296db {
+  flex: 1;
+}
+.icon-button.data-v-2c5296db {
+  display: flex;
+  width: 76rpx;
+  height: 76rpx;
+  align-items: center;
+  justify-content: center;
+}
+.icon-button image.data-v-2c5296db {
+  width: 40rpx;
+  height: 40rpx;
+}
+.spinning image.data-v-2c5296db {
+  animation: spin-2c5296db 1s linear infinite;
+}
+.course-area.data-v-2c5296db, .exam-area.data-v-2c5296db {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+}
+.exam-area.data-v-2c5296db {
+  overflow: hidden;
+  border-radius: 10rpx;
+  background: var(--surface);
+}
+.today-list.data-v-2c5296db, .exam-scroll.data-v-2c5296db {
+  height: 100%;
+}
+.today-row.data-v-2c5296db {
+  display: flex;
+  height: 160rpx;
+  align-items: center;
+}
+.time.data-v-2c5296db {
+  display: flex;
+  width: 200rpx;
+  justify-content: space-evenly;
+  font-size: 27rpx;
+}
+.timeline.data-v-2c5296db {
+  position: relative;
+  width: 24rpx;
+  height: 100%;
+}
+.line.data-v-2c5296db {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 11rpx;
+  width: 2rpx;
+  background: var(--surface);
+}
+.dot.data-v-2c5296db {
+  position: absolute;
+  top: 72rpx;
+  left: 4rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+}
+.course-card.data-v-2c5296db {
+  display: flex;
+  height: 140rpx;
+  margin-left: 10rpx;
+  padding: 20rpx 30rpx;
+  flex: 1;
+  align-items: center;
+  border-radius: 30rpx;
+  background: #fff;
+}
+.state-bar.data-v-2c5296db {
+  width: 8rpx;
+  height: 50%;
+  margin-right: 20rpx;
+  border-radius: 10rpx;
+}
+.course-card > view.data-v-2c5296db:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.course-name.data-v-2c5296db {
+  overflow: hidden;
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.course-room.data-v-2c5296db {
+  margin-top: 10rpx;
+  color: #515151;
+  font-size: 27rpx;
+}
+.divider.data-v-2c5296db {
+  height: 2rpx;
+  background: var(--surface);
+}
+.exam-head.data-v-2c5296db {
+  min-height: 100rpx;
+}
+.exam-card.data-v-2c5296db {
+  margin: 10rpx;
+  padding: 20rpx 30rpx;
+  border-radius: 30rpx;
+  background: #fff;
+}
+.exam-top.data-v-2c5296db {
+  display: flex;
+  align-items: center;
+}
+.exam-name.data-v-2c5296db {
+  width: 42%;
+  overflow: hidden;
+  font-size: 34rpx;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exam-date.data-v-2c5296db {
+  width: 22%;
+  color: #515151;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+.countdown.data-v-2c5296db {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+}
+.countdown text.data-v-2c5296db {
+  color: var(--primary-strong);
+  font-size: 38rpx;
+  font-weight: 600;
+}
+.countdown small.data-v-2c5296db {
+  margin-left: 18rpx;
+  font-size: 26rpx;
+}
+.exam-bottom.data-v-2c5296db {
+  display: flex;
+  margin-top: 12rpx;
+}
+.exam-bottom view.data-v-2c5296db {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  overflow: hidden;
+  color: #515151;
+  font-size: 23rpx;
+  white-space: nowrap;
+}
+.exam-bottom image.data-v-2c5296db {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 14rpx;
+}
+.empty-action.data-v-2c5296db, .overlay-retry.data-v-2c5296db {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+.empty-action button.data-v-2c5296db {
+  display: flex;
+  width: auto;
+  height: 76rpx;
+  min-height: 0;
+  margin-top: 18rpx;
+  padding: 0 48rpx;
+  align-items: center;
+  border-radius: 40rpx;
+  color: #000;
+  background: var(--primary);
+  font-size: 27rpx;
+  font-weight: 500;
+  line-height: 76rpx;
+}
+.empty-action button image.data-v-2c5296db {
+  width: 38rpx;
+  height: 38rpx;
+  margin-right: 14rpx;
+}
+.overlay-retry image.data-v-2c5296db {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 12rpx;
+}
+@keyframes spin-2c5296db {
+to {
+    transform: rotate(360deg);
+}
+}

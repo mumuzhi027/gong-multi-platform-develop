@@ -1,0 +1,15 @@
+.settings.data-v-b4180827 {
+  padding: 32rpx 30rpx;
+}
+.settings > view.data-v-b4180827 {
+  display: flex;
+  height: 76rpx;
+  align-items: center;
+  font-size: 36rpx;
+  font-weight: 800;
+}
+.settings image.data-v-b4180827 {
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 24rpx;
+}

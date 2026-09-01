@@ -23,8 +23,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -75,6 +80,7 @@ fun LoginScreen() {
     var enabled by remember { mutableStateOf(true) }
     var alertVisible by remember { mutableStateOf(false) }
     var alertText by remember { mutableStateOf("") }
+    var loginHelpVisible by remember { mutableStateOf(false) }
 
     val animatedColor by animateColorAsState(
         targetValue = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
@@ -107,6 +113,10 @@ fun LoginScreen() {
 
     PlatformOperation.BackHandler(true) {
         PlatformOperation.moveToBack()
+    }
+
+    if (loginHelpVisible) {
+        LoginHelpDialog(onDismiss = { loginHelpVisible = false })
     }
 
     Column(
@@ -274,7 +284,25 @@ fun LoginScreen() {
 
         Spacer(
             modifier = Modifier
-                .height(80.dp)
+                .height(22.dp)
+        )
+
+        Text(
+            text = "登不进去？点我看看",
+            textDecoration = TextDecoration.Underline,
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clickable {
+                    keyboardController?.hide()
+                    loginHelpVisible = true
+                }
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(48.dp)
         )
 
         LoadingButton(
@@ -311,4 +339,86 @@ fun LoginScreen() {
                 }
         )
     }
+}
+
+@Composable
+private fun LoginHelpDialog(onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "登录常见问题",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                LoginHelpItem(
+                    title = "账号或密码不对",
+                    detail = "请使用学校信息门户的账号和密码。建议先在信息门户确认能够正常登录，再回到拱拱重试。"
+                )
+                Text(
+                    text = "打开信息门户",
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .padding(bottom = 18.dp)
+                        .clickable {
+                            runCatching {
+                                uriHandler.openUri("https://portal2020.xtu.edu.cn/")
+                            }
+                        }
+                )
+
+                LoginHelpItem(
+                    title = "提示“未知错误”",
+                    detail = "短时间尝试次数过多时，信息门户可能会暂时禁用账号。请停止反复尝试，等待 24 小时后再登录。"
+                )
+                LoginHelpItem(
+                    title = "提示“该账户未初始化”",
+                    detail = "通常是密码过于简单。请先登录信息门户修改为更安全的密码，再使用新密码登录拱拱。"
+                )
+                LoginHelpItem(
+                    title = "提示“axios error”或网络超时",
+                    detail = "请检查网络并确认拱拱已更新到最新版本；仍无法登录时，可稍后重试或先使用离线模式。"
+                )
+                Text(
+                    text = "下载安卓最新版",
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.clickable {
+                        runCatching {
+                            uriHandler.openUri("https://apk-1316996046.cos.ap-guangzhou.myqcloud.com/gong.zip")
+                        }
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("我知道了")
+            }
+        }
+    )
+}
+
+@Composable
+private fun LoginHelpItem(title: String, detail: String) {
+    Text(
+        text = title,
+        color = MaterialTheme.colorScheme.onSurface,
+        style = MaterialTheme.typography.titleSmall
+    )
+    Text(
+        text = detail,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+    )
 }

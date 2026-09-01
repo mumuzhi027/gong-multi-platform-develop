@@ -1,0 +1,30 @@
+.header.data-v-48a13218 {
+  display: flex;
+  min-height: 92rpx;
+  padding-right: 24rpx;
+  padding-left: 24rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-button.data-v-48a13218,
+.header-spacer.data-v-48a13218 {
+  display: flex;
+  width: 64rpx;
+  height: 64rpx;
+  align-items: center;
+  justify-content: center;
+  font-size: 60rpx;
+  line-height: 1;
+}
+.header-icon.data-v-48a13218 {
+  width: 46rpx;
+  height: 46rpx;
+}
+.back-icon.data-v-48a13218 {
+  width: 40rpx;
+  height: 40rpx;
+}
+.header-title.data-v-48a13218 {
+  font-size: 34rpx;
+  font-weight: 700;
+}

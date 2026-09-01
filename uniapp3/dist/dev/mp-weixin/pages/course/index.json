@@ -1,0 +1,10 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "app-header": "../../components/AppHeader",
+    "state-view": "../../components/StateView",
+    "course-sheet": "../../components/CourseSheet",
+    "authorization-dialog": "../../components/AuthorizationDialog"
+  }
+}

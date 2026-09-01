@@ -16,6 +16,9 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - SPIDER_URL=http://api:8080
+      - ACTIVITY_ADMIN_TOKEN=${ACTIVITY_ADMIN_TOKEN:?set ACTIVITY_ADMIN_TOKEN}
+      - ACTIVITY_ADMIN_ORIGIN=${ACTIVITY_ADMIN_ORIGIN:-*}
+      - ACTIVITY_DATA_DIR=/app/_data/activities
     volumes:
       - proxy_files:/app/_data
       - /etc/localtime:/etc/localtime:ro  # 设置时区
@@ -24,4 +27,3 @@ services:
 volumes:
   api-logs:
   proxy_files:
-

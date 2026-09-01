@@ -38,6 +38,8 @@ import org.koin.mp.KoinPlatform.getKoin
 @Composable
 fun MainScreen(
     drawerState: DrawerState,
+    toActivityScreen: () -> Unit,
+    toActivityDetail: (String) -> Unit,
     toAcademicScreen: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -102,6 +104,21 @@ fun MainScreen(
         ) {
             VerticalCourseBox(viewModel)
         }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surface)
+        )
+
+        ActivityOverview(
+            toActivityScreen = toActivityScreen,
+            toActivityDetail = toActivityDetail,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(190.dp)
+        )
 
         Spacer(
             modifier = Modifier

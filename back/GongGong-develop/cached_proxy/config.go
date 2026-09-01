@@ -9,7 +9,16 @@ import (
 // SpiderUrl 爬虫地址
 var (
 	SpiderUrl = os.Getenv("SPIDER_URL")
+	ActivityDataDir = envOrDefault("ACTIVITY_DATA_DIR", "./_data/activities")
+	ActivityAdminOrigin = envOrDefault("ACTIVITY_ADMIN_ORIGIN", "*")
 )
+
+func envOrDefault(key string, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
 
 // 日历事件的默认提醒
 var (

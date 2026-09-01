@@ -1,0 +1,42 @@
+.sheet-host.data-v-ac568c0a {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.3);
+}
+.sheet.data-v-ac568c0a {
+  width: 100%;
+  padding: 16rpx 30rpx calc(20rpx + env(safe-area-inset-bottom));
+  border-radius: 36rpx 36rpx 0 0;
+  background: var(--card);
+}
+.handle.data-v-ac568c0a {
+  width: 80rpx;
+  height: 8rpx;
+  margin: 0 auto 30rpx;
+  border-radius: 10rpx;
+  background: #c9c9c9;
+}
+.sheet-title.data-v-ac568c0a {
+  margin-bottom: 16rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+.detail-grid.data-v-ac568c0a {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx 20rpx;
+  color: #171717;
+  font-size: 30rpx;
+}
+.detail-grid view.data-v-ac568c0a {
+  display: flex;
+  align-items: center;
+}
+.detail-icon.data-v-ac568c0a {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 20rpx;
+}

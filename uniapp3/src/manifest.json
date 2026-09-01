@@ -1,0 +1,27 @@
+{
+    "name" : "拱拱",
+    "appid" : "__UNI__F1B1D4E",
+    "description" : "湘大学业与校园信息助手",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "vueVersion" : "3",
+    "transformPx" : false,
+    "uniStatistics" : {
+        "enable" : false
+    },
+    "mp-weixin" : {
+        "appid" : "touristappid",
+        "setting" : {
+            "urlCheck" : false,
+            "es6" : true,
+            "minified" : true,
+            "postcss" : true
+        },
+        "usingComponents" : true
+    },
+    "h5" : {
+        "router" : {
+            "mode" : "hash"
+        }
+    }
+}
