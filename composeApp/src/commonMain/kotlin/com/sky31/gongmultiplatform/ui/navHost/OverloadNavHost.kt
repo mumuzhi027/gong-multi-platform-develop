@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sky31.gongmultiplatform.di.LocalOverloadNavController
 import com.sky31.gongmultiplatform.ui.screen.overload.NotificationRequestScreen
+import com.sky31.gongmultiplatform.ui.screen.widgetScreen.DesktopWidgetScreen
 import com.sky31.gongmultiplatform.util.hasPostNotificationPermission
 import kotlinx.coroutines.delay
 
@@ -153,6 +154,42 @@ fun OverloadNavHost() {
                     },
                 ) {
                     NotificationRequestScreen()
+                }
+
+                composable(
+                    route = "desktopWidget",
+                    enterTransition = {
+                        slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(
+                                delayMillis = 300,
+                                durationMillis = 500,
+                                easing = LinearOutSlowInEasing
+                            )
+                        ) + fadeIn(
+                            animationSpec = tween(
+                                delayMillis = 300,
+                                durationMillis = 400,
+                                easing = LinearOutSlowInEasing
+                            )
+                        )
+                    },
+                    exitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(
+                                durationMillis = 500,
+                                easing = LinearOutSlowInEasing
+                            )
+                        ) + fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 400,
+                                easing = LinearOutSlowInEasing
+                            )
+                        )
+                    }
+                ) {
+                    DesktopWidgetScreen()
                 }
             }
         }

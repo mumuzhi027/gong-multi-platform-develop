@@ -31,6 +31,7 @@ import com.sky31.gongmultiplatform.util.TokenState
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.about
 import gongmultiplatform.composeapp.generated.resources.settings
+import gongmultiplatform.composeapp.generated.resources.course
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -99,6 +100,15 @@ fun MainScreenDrawer(
                         state.close()
                     }
                     overloadController.navigate("about")
+                }
+            )
+
+            IconRow(
+                icon = Res.drawable.course,
+                text = "桌面组件",
+                click = {
+                    scope.launch { state.close() }
+                    overloadController.navigate("desktopWidget")
                 }
             )
         }

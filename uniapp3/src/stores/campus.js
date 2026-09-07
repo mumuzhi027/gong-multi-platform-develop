@@ -9,6 +9,7 @@ export const useCampusStore = defineStore('campus', {
     courseMap: storage.get(STORAGE_KEYS.courseMap, {}),
     calendar: storage.get(STORAGE_KEYS.calendar, null),
     exams: storage.get(STORAGE_KEYS.exams, []),
+    activities: storage.get(STORAGE_KEYS.activities, []),
     todayClassroom: storage.get(STORAGE_KEYS.todayClassroom, null),
     tomorrowClassroom: storage.get(STORAGE_KEYS.tomorrowClassroom, null),
     academic: storage.get(STORAGE_KEYS.academic, {
@@ -47,6 +48,21 @@ export const useCampusStore = defineStore('campus', {
         throw error
       } finally {
         this.setLoading('home', false)
+      }
+    },
+    async loadActivities() {
+      this.setLoading('activities', true)
+      this.setError('activities', null)
+      try {
+        const activities = await campusApi.activities()
+        this.activities = Array.isArray(activities) ? activities : []
+        storage.set(STORAGE_KEYS.activities, this.activities)
+        return this.activities
+      } catch (error) {
+        this.setError('activities', error)
+        throw error
+      } finally {
+        this.setLoading('activities', false)
       }
     },
     async loadClassrooms() {

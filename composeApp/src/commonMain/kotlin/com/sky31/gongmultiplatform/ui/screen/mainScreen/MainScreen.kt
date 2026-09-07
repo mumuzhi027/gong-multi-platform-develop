@@ -16,6 +16,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -39,12 +41,12 @@ import org.koin.mp.KoinPlatform.getKoin
 fun MainScreen(
     drawerState: DrawerState,
     toActivityScreen: () -> Unit,
-    toActivityDetail: (String) -> Unit,
-    toAcademicScreen: () -> Unit
+    toActivityDetail: (String) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val viewModel: MainViewModel = getKoin().get<MainViewModel>()
     val drawerViewModel: DrawerViewModel = viewModel { DrawerViewModel() }
+    val exams by viewModel.examList.collectAsState()
 
     LaunchedEffect(Unit) {
         while(isActive) {
@@ -99,7 +101,7 @@ fun MainScreen(
 
         Box(
             modifier = Modifier
-                .weight(1f)
+                .weight(if (exams.isEmpty()) 1.35f else 1.15f)
                 .fillMaxWidth()
         ) {
             VerticalCourseBox(viewModel)
@@ -129,12 +131,11 @@ fun MainScreen(
 
         Box(
             modifier = Modifier
-                .weight(1f)
+                .then(if (exams.isEmpty()) Modifier.height(132.dp) else Modifier.weight(.85f))
                 .fillMaxWidth()
         ) {
             ExamArrangementBox(
-                viewModel = viewModel,
-                toAcademicScreen = toAcademicScreen
+                viewModel = viewModel
             )
         }
     }

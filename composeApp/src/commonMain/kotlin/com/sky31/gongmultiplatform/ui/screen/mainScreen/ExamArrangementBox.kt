@@ -9,18 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.sky31.gongmultiplatform.ui.component.CustomScrollBox
@@ -48,7 +43,6 @@ import com.sky31.gongmultiplatform.util.TokenState
 import com.sky31.gongmultiplatform.util.parseLocalDateTimeOrNull
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.baseline_refresh_24
-import gongmultiplatform.composeapp.generated.resources.grade
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -58,8 +52,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 @Composable
 fun ExamArrangementBox(
-    viewModel: MainViewModel,
-    toAcademicScreen: () -> Unit
+    viewModel: MainViewModel
 ) {
     val scope = rememberCoroutineScope()
 
@@ -149,46 +142,11 @@ fun ExamArrangementBox(
                 contentAlignment = Alignment.Center
             ) {
                 if (sortedExamList.isEmpty()) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = "暂无考试",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Button(
-                            onClick = {
-                                toAcademicScreen()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,  // 背景透明
-                                contentColor = Color.Unspecified
-                            ),
-                            contentPadding = PaddingValues(start = 25.dp, end = 25.dp),
-                            modifier = Modifier.defaultMinSize(0.dp, 0.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.grade),
-                                    contentDescription = "course",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(20.dp)
-                                )
-
-                                Text(
-                                    text = "成绩单",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = "暂无考试",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 } else {
                     CustomScrollBox(
                         modifier = Modifier

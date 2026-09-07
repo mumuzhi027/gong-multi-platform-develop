@@ -13,4 +13,7 @@ class ActivityRepositoryImpl(
 
     override suspend fun getActivities(limit: Int?): NetworkResult<List<CampusActivity>> =
         safeApiCall { api.getActivities(limit) }
+
+    override suspend fun getActivityFilters(): NetworkResult<List<String>> =
+        safeApiCall { api.getActivityFilters() }
 }

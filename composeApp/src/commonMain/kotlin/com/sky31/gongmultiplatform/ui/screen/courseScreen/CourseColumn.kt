@@ -41,6 +41,8 @@ fun CourseColumn(
     courseList: List<CourseElem> = emptyList(),
     highlighted: Boolean = false,
     highlightColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+    day: String,
+    week: Long,
     content: @Composable () -> Unit
 ) {
     Box(modifier = modifier) {
@@ -64,6 +66,8 @@ fun CourseColumn(
                 courseList = courseList,
                 start = 1,
                 end = 4,
+                day = day,
+                week = week,
                 modifier = Modifier.weight(4f)
             )
 
@@ -73,6 +77,8 @@ fun CourseColumn(
                 courseList = courseList,
                 start = 5,
                 end = 8,
+                day = day,
+                week = week,
                 modifier = Modifier.weight(4f)
             )
 
@@ -82,6 +88,8 @@ fun CourseColumn(
                 courseList = courseList,
                 start = 9,
                 end = 11,
+                day = day,
+                week = week,
                 modifier = Modifier.weight(3f)
             )
         }
@@ -93,7 +101,9 @@ fun CourseColumnFragment(
     modifier: Modifier = Modifier,
     courseList: List<CourseElem>,
     start: Int,
-    end: Int
+    end: Int,
+    day: String,
+    week: Long
 ) {
     val viewModel: CourseViewModel = viewModel { CourseViewModel() }
 
@@ -136,7 +146,13 @@ fun CourseColumnFragment(
                 val classroomMaxLines = if (course.duration >= 2) 4 else 3
 
                 if (course.startTime > index) {
-                    Spacer(modifier = Modifier.weight((course.startTime - index).toFloat()))
+                    repeat(course.startTime - index) { offset ->
+                        val slot = index + offset
+                        EmptyCourseSlot(
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.openEditor(day, week, slot) }
+                        )
+                    }
                 }
 
                 Column(
@@ -145,8 +161,11 @@ fun CourseColumnFragment(
                         .padding(horizontal = 2.dp, vertical = 3.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .clickable {
-                            viewModel.setSheetCourse(course)
-                            viewModel.showSheet()
+                            if (course.isCustom) viewModel.openEditor(day, week, course.startTime, course)
+                            else {
+                                viewModel.setSheetCourse(course)
+                                viewModel.showSheet()
+                            }
                         }
                         .background(courseColor)
                         .padding(horizontal = 3.dp, vertical = 4.dp)
@@ -181,7 +200,27 @@ fun CourseColumnFragment(
             }
 
         if (index <= end) {
-            Spacer(modifier = Modifier.weight((end - index + 1).toFloat()))
+            repeat(end - index + 1) { offset ->
+                val slot = index + offset
+                EmptyCourseSlot(
+                    modifier = Modifier.weight(1f),
+                    onClick = { viewModel.openEditor(day, week, slot) }
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun EmptyCourseSlot(modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 2.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("＋", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .28f), fontSize = 12.sp)
     }
 }

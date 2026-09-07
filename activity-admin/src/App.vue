@@ -17,15 +17,22 @@ const defaultForm = () => ({
   featured: false,
   published: true,
   sortOrder: 0,
+  filterTags: [],
 })
 
 const inferredApiBase = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `${window.location.origin}/api`
 const apiBase = ref(localStorage.getItem('gong_activity_api') || inferredApiBase)
 const adminToken = ref(sessionStorage.getItem('gong_activity_token') || '')
 const activities = ref([])
+const activityFilters = ref([])
+const filterDraft = ref('')
 const activeSection = ref('activities')
 const logs = ref([])
 const logsLoading = ref(false)
+const userStatsLoading = ref(false)
+const userStats = ref(null)
+const statsFrom = ref('')
+const statsTo = ref(localDateKey())
 const logLevel = ref('')
 const logEvent = ref('login')
 const logQuery = ref('')
@@ -191,6 +198,11 @@ async function connect() {
     localStorage.setItem('gong_activity_api', apiBase.value.replace(/\/$/, ''))
     sessionStorage.setItem('gong_activity_token', adminToken.value)
     activities.value = await request('/admin/activities')
+    try {
+      activityFilters.value = await request('/admin/activity-filters')
+    } catch {
+      activityFilters.value = []
+    }
     connected.value = true
   } catch (reason) {
     connected.value = false
@@ -212,6 +224,24 @@ async function refresh() {
   }
 }
 
+function addActivityFilter() {
+  const value = filterDraft.value.trim()
+  if (value && !activityFilters.value.includes(value) && activityFilters.value.length < 12) {
+    activityFilters.value = [...activityFilters.value, value]
+  }
+  filterDraft.value = ''
+}
+
+async function saveActivityFilters() {
+  error.value = ''
+  try {
+    activityFilters.value = await request('/admin/activity-filters', {
+      method: 'PUT', body: JSON.stringify({ filters: activityFilters.value }),
+    })
+    notice.value = '活动筛选项已保存'
+  } catch (reason) { error.value = reason.message }
+}
+
 async function loadLogs() {
   logsLoading.value = true
   error.value = ''
@@ -229,11 +259,32 @@ async function loadLogs() {
   }
 }
 
+async function loadUserStats() {
+  userStatsLoading.value = true
+  error.value = ''
+  try {
+    const params = new URLSearchParams()
+    if (statsFrom.value) params.set('from', statsFrom.value)
+    if (statsTo.value) params.set('to', statsTo.value)
+    const suffix = params.toString() ? `?${params}` : ''
+    userStats.value = await request(`/admin/user-stats${suffix}`)
+  } catch (reason) {
+    error.value = reason.message || '无法读取用户累计统计'
+  } finally {
+    userStatsLoading.value = false
+  }
+}
+
+function formatStatsDate(timestamp) {
+  if (!timestamp) return '—'
+  return new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(timestamp))
+}
+
 async function switchSection(section) {
   activeSection.value = section
   error.value = ''
   notice.value = ''
-  if (section === 'logs') await loadLogs()
+  if (section === 'logs') await Promise.all([loadLogs(), loadUserStats()])
 }
 
 async function clearLogs() {
@@ -263,6 +314,7 @@ function logMessage(entry) {
     'Unauthorized': '账号或密码错误',
     'Account Not Initialized': '账号尚未初始化',
     'Account Locked': '账号已锁定',
+    'Service Unavailable': '学校统一认证服务暂时不可用',
     'Internal Server Error': '后端内部错误',
   }
   if (entry.event === 'login') {
@@ -280,6 +332,7 @@ function openCreate() {
 function openEdit(activity) {
   Object.assign(form, defaultForm(), activity)
   form.images = [...(activity.images || [])]
+  form.filterTags = [...(activity.filterTags || [])]
   editorOpen.value = true
 }
 
@@ -455,6 +508,20 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
       <p v-if="error" class="message error">{{ error }}</p>
       <p v-if="notice" class="message success">{{ notice }}</p>
 
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>客户端筛选行</h2><span>这里的项目会显示在近期/往期下方；活动未选择项目时默认出现在全部筛选中。</span></div>
+          <button class="secondary" @click="saveActivityFilters">保存筛选行</button>
+        </div>
+        <div class="filter-editor">
+          <span v-for="(item, index) in activityFilters" :key="item" class="tag published">
+            {{ item }} <button type="button" class="tag-remove" @click="activityFilters.splice(index, 1)">×</button>
+          </span>
+          <input v-model="filterDraft" maxlength="20" placeholder="例如：讲座、比赛、招新" @keyup.enter="addActivityFilter" />
+          <button class="secondary" type="button" @click="addActivityFilter">添加</button>
+        </div>
+      </section>
+
       <section v-for="group in activityGroups" :key="group.key" class="panel activity-group-panel">
         <div class="panel-head">
           <div>
@@ -506,10 +573,30 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
           <button class="primary" :disabled="logsLoading" @click="loadLogs">{{ logsLoading ? '读取中…' : '刷新日志' }}</button>
         </header>
 
-        <section class="stats">
-          <article><strong>{{ logs.length }}</strong><span>当前加载</span></article>
-          <article><strong>{{ loginLogCount }}</strong><span>登录次数</span></article>
-          <article><strong>{{ failedLoginCount }}</strong><span>登录失败</span></article>
+        <section class="panel user-stats-panel">
+          <div class="panel-head user-stats-head">
+            <div>
+              <h2>用户累计</h2>
+              <span>只统计登录成功的独立账号；从 {{ formatStatsDate(userStats?.trackingStartedAt) }} 开始自动记录</span>
+            </div>
+            <div class="stats-range">
+              <label><span>从</span><input v-model="statsFrom" type="date" /></label>
+              <label><span>到</span><input v-model="statsTo" type="date" /></label>
+              <button class="secondary" :disabled="userStatsLoading" @click="loadUserStats">{{ userStatsLoading ? '统计中…' : '查询' }}</button>
+            </div>
+          </div>
+          <div class="stats user-stats-grid">
+            <article><strong>{{ userStats?.totalUsers ?? '—' }}</strong><span>累计用户</span></article>
+            <article><strong>{{ userStats?.newUsers ?? '—' }}</strong><span>区间新增</span></article>
+            <article><strong>{{ userStats?.activeUsers ?? '—' }}</strong><span>区间登录用户</span></article>
+            <article><strong>{{ userStats?.loginCount ?? '—' }}</strong><span>区间登录次数</span></article>
+          </div>
+        </section>
+
+        <section class="stats log-summary-stats">
+          <article><strong>{{ logs.length }}</strong><span>当前日志</span></article>
+          <article><strong>{{ loginLogCount }}</strong><span>日志内登录</span></article>
+          <article><strong>{{ failedLoginCount }}</strong><span>日志内失败</span></article>
         </section>
 
         <p v-if="error" class="message error">{{ error }}</p>
@@ -519,7 +606,7 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
           <div class="panel-head log-tools">
             <div>
               <h2>请求记录</h2>
-              <span>最多保留并展示最近 500 条，当前查询最多返回 300 条</span>
+              <span>后端持续保存最近 5000 条（无需打开管理端），当前查询最多返回 300 条</span>
             </div>
             <div class="log-filters">
               <select v-model="logEvent" @change="loadLogs">
@@ -585,6 +672,16 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
           <label><span>海报主标题</span><input v-model.trim="form.posterTitle" placeholder="显示在海报图片上" /></label>
           <label><span>海报副标题</span><input v-model.trim="form.posterSubtitle" placeholder="显示在主标题下方" /></label>
           <label class="full"><span>活动介绍</span><textarea v-model.trim="form.description" rows="4" /></label>
+          <div class="full">
+            <span class="field-label">发布到哪个筛选项</span>
+            <p class="field-help">不选择时默认在所有筛选项下显示。</p>
+            <div class="filter-editor">
+              <label v-for="item in activityFilters" :key="item" class="switch-row">
+                <input v-model="form.filterTags" type="checkbox" :value="item" /><span>{{ item }}</span>
+              </label>
+              <span v-if="!activityFilters.length">请先在活动列表顶部添加筛选项</span>
+            </div>
+          </div>
 
           <div class="full poster-field">
             <div>

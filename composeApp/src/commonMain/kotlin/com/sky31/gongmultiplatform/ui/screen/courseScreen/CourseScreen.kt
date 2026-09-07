@@ -83,6 +83,7 @@ fun CourseScreen() {
         }
     ) { innerPadding ->
         CourseBottomSheet()
+        CourseEditorDialog()
 
         PullToRefreshBox(
             isRefreshing = refreshing,
@@ -214,7 +215,9 @@ fun CourseScreen() {
                                         ?.sortedBy { course -> course.startTime }
                                         ?: emptyList(),
                                     highlighted = isTodayColumn,
-                                    highlightColor = todayTint
+                                    highlightColor = todayTint,
+                                    day = item,
+                                    week = page.toLong() + 1
                                 ) {
                                     Column(
                                         modifier = Modifier

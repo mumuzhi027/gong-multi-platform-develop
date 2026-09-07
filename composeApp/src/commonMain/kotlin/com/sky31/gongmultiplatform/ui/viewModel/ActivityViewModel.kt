@@ -24,6 +24,9 @@ class ActivityViewModel : ViewModel(), KoinComponent {
     private val _usingFallback = MutableStateFlow(true)
     val usingFallback = _usingFallback.asStateFlow()
 
+    private val _filters = MutableStateFlow<List<String>>(emptyList())
+    val filters = _filters.asStateFlow()
+
     init {
         refresh()
     }
@@ -42,6 +45,10 @@ class ActivityViewModel : ViewModel(), KoinComponent {
                 is NetworkResult.Error -> {
                     _usingFallback.value = true
                 }
+            }
+            when (val result = repository.getActivityFilters()) {
+                is NetworkResult.Success -> _filters.value = result.data
+                is NetworkResult.Error -> Unit
             }
             _loading.value = false
         }

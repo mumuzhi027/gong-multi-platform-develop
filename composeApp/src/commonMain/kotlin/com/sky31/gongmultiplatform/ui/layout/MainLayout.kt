@@ -82,9 +82,6 @@ fun MainLayout() {
                             },
                             toActivityDetail = { activityId ->
                                 navController.navigate("activity/$activityId")
-                            },
-                            toAcademicScreen = {
-                                navController.navigate("academic")
                             }
                         )
                     }

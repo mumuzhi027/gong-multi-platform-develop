@@ -12,5 +12,7 @@ data class CourseElem(
     @SerialName("start_time")
     val startTime: Int,
     val duration: Int,
-    val day: String
+    val day: String,
+    @SerialName("is_custom")
+    val isCustom: Boolean = false
 )

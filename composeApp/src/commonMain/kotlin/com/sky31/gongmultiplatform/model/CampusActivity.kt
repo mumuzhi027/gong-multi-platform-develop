@@ -18,7 +18,8 @@ data class CampusActivity(
     val description: String = "",
     val featured: Boolean = false,
     val published: Boolean = true,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    val filterTags: List<String> = emptyList()
 )
 
 val previewCampusActivities = listOf(

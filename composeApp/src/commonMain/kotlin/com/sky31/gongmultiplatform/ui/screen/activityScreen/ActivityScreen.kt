@@ -3,6 +3,7 @@ package com.sky31.gongmultiplatform.ui.screen.activityScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +43,9 @@ import com.sky31.gongmultiplatform.model.durationLabel
 import com.sky31.gongmultiplatform.model.isPastActivity
 import com.sky31.gongmultiplatform.ui.viewModel.ActivityViewModel
 import org.koin.mp.KoinPlatform.getKoin
+import gongmultiplatform.composeapp.generated.resources.Res
+import gongmultiplatform.composeapp.generated.resources.filter_list
+import org.jetbrains.compose.resources.painterResource
 
 private enum class ActivityPeriod(val label: String) {
     Current("近期活动"),
@@ -51,15 +58,20 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
     val activities by viewModel.activities.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val usingFallback by viewModel.usingFallback.collectAsState()
+    val filters by viewModel.filters.collectAsState()
     val today = currentActivityDate()
     val currentActivities = activities.filterNot { it.isPastActivity(today) }
     val pastActivities = activities
         .filter { it.isPastActivity(today) }
         .sortedByDescending { it.endDate.replace('.', '-') }
     var selectedPeriod by remember { mutableStateOf(ActivityPeriod.Current) }
-    val displayedActivities = when (selectedPeriod) {
+    var selectedFilter by remember { mutableStateOf<String?>(null) }
+    val periodActivities = when (selectedPeriod) {
         ActivityPeriod.Current -> currentActivities
         ActivityPeriod.Past -> pastActivities
+    }
+    val displayedActivities = periodActivities.filter { activity ->
+        selectedFilter == null || activity.filterTags.isEmpty() || selectedFilter in activity.filterTags
     }
 
     LazyColumn(
@@ -117,6 +129,13 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
                 TextButton(onClick = viewModel::refresh, enabled = !loading) {
                     Text(if (loading) "更新中…" else "刷新")
                 }
+                IconButton(onClick = { selectedFilter = null }) {
+                    Icon(
+                        painter = painterResource(Res.drawable.filter_list),
+                        contentDescription = "筛选活动",
+                        tint = if (selectedFilter == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
 
@@ -125,6 +144,16 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
                 selectedPeriod = selectedPeriod,
                 onPeriodSelected = { selectedPeriod = it }
             )
+        }
+
+        if (filters.isNotEmpty()) {
+            item {
+                ActivityFilterRow(
+                    filters = filters,
+                    selected = selectedFilter,
+                    onSelected = { selectedFilter = it }
+                )
+            }
         }
 
         items(displayedActivities, key = { "${selectedPeriod.name}-${it.id}" }) { activity ->
@@ -158,6 +187,27 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
 
         item {
             Box(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun ActivityFilterRow(filters: List<String>, selected: String?, onSelected: (String?) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf<String?>(null) .plus(filters).forEach { filter ->
+            val active = selected == filter
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                    .clickable { onSelected(filter) }
+                    .padding(horizontal = 16.dp, vertical = 7.dp)
+            ) {
+                Text(filter ?: "全部", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }

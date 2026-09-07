@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultRequestLogCapacity = 500
-	maxRequestLogFileSize     = 5 << 20
+	defaultRequestLogCapacity = 5000
+	maxRequestLogFileSize     = 25 << 20
 	maxLoggedErrorLength      = 600
 	maxInspectedResponseSize  = 4096
 )

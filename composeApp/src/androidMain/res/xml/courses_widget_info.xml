@@ -8,5 +8,7 @@
     android:targetCellHeight="3"
     android:minResizeWidth="40dp"
     android:minResizeHeight="60dp"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
     >
 </appwidget-provider>

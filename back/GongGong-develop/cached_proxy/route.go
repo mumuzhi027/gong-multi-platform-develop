@@ -36,6 +36,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+		if UserStats != nil {
+			if statsErr := UserStats.recordSuccessfulLogin(creds.Username, time.Now()); statsErr != nil {
+				log.Printf("failed to record successful login statistics: %v", statsErr)
+			}
+		}
 		resp := map[string]string{
 			"access_token": token,
 			"token_type":   "Bearer",
@@ -56,6 +61,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	} else if err.Error() == "account locked" {
 		http.Error(w, "Account Locked", 423)
+	} else if err.Error() == "service unavailable" {
+		http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
 	} else {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}

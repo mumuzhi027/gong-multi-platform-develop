@@ -12,6 +12,8 @@ actual suspend fun updateAppWidget() {
         return
     }
 
+    if (!isDesktopWidgetEnabled()) return
+
     runCatching {
         val manager = GlanceAppWidgetManager(context)
         val glanceIds = manager.getGlanceIds(CoursesAppWidget::class.java)

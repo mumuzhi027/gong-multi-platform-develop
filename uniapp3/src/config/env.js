@@ -14,4 +14,5 @@ export const STORAGE_KEYS = {
   todayClassroom: 'gong_classroom_today',
   tomorrowClassroom: 'gong_classroom_tomorrow',
   academic: 'gong_academic',
+  activities: 'gong_activities',
 }

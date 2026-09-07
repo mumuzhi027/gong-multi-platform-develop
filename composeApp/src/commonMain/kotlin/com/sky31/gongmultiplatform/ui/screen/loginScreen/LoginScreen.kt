@@ -56,16 +56,20 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sky31.gongmultiplatform.SystemGlobalConfig
+import com.sky31.gongmultiplatform.network.repository.NotificationRepositoryImpl
 import com.sky31.gongmultiplatform.ui.component.LoadingButton
 import com.sky31.gongmultiplatform.ui.viewModel.AuthViewModel
 import com.sky31.gongmultiplatform.util.NetworkResult
 import com.sky31.gongmultiplatform.util.PlatformOperation
+import com.sky31.gongmultiplatform.util.Toast
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.login_logo
 import gongmultiplatform.composeapp.generated.resources.password_invisible
 import gongmultiplatform.composeapp.generated.resources.password_visible
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.ktor.http.HttpStatusCode
 import org.jetbrains.compose.resources.painterResource
 import org.koin.mp.KoinPlatform.getKoin
 
@@ -81,6 +85,10 @@ fun LoginScreen() {
     var alertVisible by remember { mutableStateOf(false) }
     var alertText by remember { mutableStateOf("") }
     var loginHelpVisible by remember { mutableStateOf(false) }
+    var credentialWarningVisible by remember { mutableStateOf(false) }
+    var credentialWarningShown by remember { mutableStateOf(false) }
+    var credentialFailureCount by remember { mutableStateOf(0) }
+    var failedUsername by remember { mutableStateOf("") }
 
     val animatedColor by animateColorAsState(
         targetValue = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
@@ -117,6 +125,10 @@ fun LoginScreen() {
 
     if (loginHelpVisible) {
         LoginHelpDialog(onDismiss = { loginHelpVisible = false })
+    }
+
+    if (credentialWarningVisible) {
+        CredentialWarningDialog(onDismiss = { credentialWarningVisible = false })
     }
 
     Column(
@@ -317,6 +329,20 @@ fun LoginScreen() {
                 authViewModel.login(username, password) { result ->
                     if (result is NetworkResult.Success) {
                         autoFillManager?.commit()
+                        credentialFailureCount = 0
+                        credentialWarningShown = false
+                        failedUsername = ""
+                    } else if (result is NetworkResult.Error && result.code == HttpStatusCode.Unauthorized) {
+                        if (failedUsername != username) {
+                            failedUsername = username
+                            credentialFailureCount = 0
+                            credentialWarningShown = false
+                        }
+                        credentialFailureCount += 1
+                        if (credentialFailureCount >= 2 && !credentialWarningShown) {
+                            credentialWarningShown = true
+                            credentialWarningVisible = true
+                        }
                     }
                 }
             },
@@ -342,8 +368,32 @@ fun LoginScreen() {
 }
 
 @Composable
+private fun CredentialWarningDialog(onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("请先确认账号密码") },
+        text = {
+            Text("您可以先去尝试此账号密码是否可以在湘潭大学信息门户登录以确认，或直接修改密码，避免因错误次数过多导致账号被锁，24 小时后才能再次登录。")
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("我知道了") }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                runCatching { uriHandler.openUri("https://portal2020.xtu.edu.cn/") }
+                onDismiss()
+            }) { Text("打开信息门户") }
+        }
+    )
+}
+
+@Composable
 private fun LoginHelpDialog(onDismiss: () -> Unit) {
     val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val notificationRepository = remember { getKoin().get<NotificationRepositoryImpl>() }
+    var resolvingDownload by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -388,13 +438,34 @@ private fun LoginHelpDialog(onDismiss: () -> Unit) {
                     detail = "请检查网络并确认拱拱已更新到最新版本；仍无法登录时，可稍后重试或先使用离线模式。"
                 )
                 Text(
-                    text = "下载安卓最新版",
+                    text = if (resolvingDownload) "正在获取下载地址…" else "下载安卓最新版",
                     color = MaterialTheme.colorScheme.primary,
                     textDecoration = TextDecoration.Underline,
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.clickable {
-                        runCatching {
-                            uriHandler.openUri("https://apk-1316996046.cos.ap-guangzhou.myqcloud.com/gong.zip")
+                    modifier = Modifier.clickable(enabled = !resolvingDownload) {
+                        scope.launch {
+                            resolvingDownload = true
+                            when (val result = notificationRepository.getUpdateNotification()) {
+                                is NetworkResult.Success -> {
+                                    val configuredUrl = result.data.updateUrl.trim()
+                                    if (configuredUrl.isEmpty()) {
+                                        Toast.show("服务器暂未配置下载地址")
+                                    } else {
+                                        val downloadUrl = if (
+                                            configuredUrl.startsWith("http://") ||
+                                            configuredUrl.startsWith("https://")
+                                        ) {
+                                            configuredUrl
+                                        } else {
+                                            "${SystemGlobalConfig.updateEndpoint.baseUrl}/${configuredUrl.trimStart('.', '/')}"
+                                        }
+                                        runCatching { uriHandler.openUri(downloadUrl) }
+                                            .onFailure { Toast.show("无法打开下载地址") }
+                                    }
+                                }
+                                is NetworkResult.Error -> Toast.show(result.message)
+                            }
+                            resolvingDownload = false
                         }
                     }
                 )

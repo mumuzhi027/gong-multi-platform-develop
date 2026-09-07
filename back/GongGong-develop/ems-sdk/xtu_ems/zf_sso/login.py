@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urljoin, urlparse
 
 from aiohttp import ClientSession
 
@@ -8,6 +9,28 @@ from xtu_ems.common.sess import HttpSessionHolder as SessionHolder
 from xtu_ems.zf_sso.config import key_url, login_url, login_success_url_prefix, modify_password_url_prefix
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_login_redirect(location: str) -> str:
+    """Resolve CAS relative redirects and only accept the configured portal service."""
+    redirect_url = urljoin(login_url, location)
+    actual = urlparse(redirect_url)
+    expected = urlparse(login_success_url_prefix)
+    expected_path = expected.path.rstrip("/")
+    actual_path = actual.path.rstrip("/")
+    if (
+        actual.hostname != expected.hostname
+        or actual.scheme not in ("http", "https")
+        or (actual_path != expected_path and not actual_path.startswith(expected_path + "/"))
+    ):
+        logger.warning(
+            "Unexpected CAS redirect: scheme=%s host=%s path=%s",
+            actual.scheme,
+            actual.hostname,
+            actual.path,
+        )
+        raise ServiceUnavailableException("ticket URL not found")
+    return redirect_url
 
 
 async def login(username: str, password: str) -> SessionHolder:
@@ -70,8 +93,14 @@ async def login(username: str, password: str) -> SessionHolder:
             allow_redirects=False,
         ) as response:
             if response.status == 302 and "Location" in response.headers:
-                redirect_url = response.headers["Location"] or ""
-                logger.debug(f"Redirect Location: {redirect_url}")
+                redirect_url = urljoin(login_url, response.headers["Location"] or "")
+                parsed_redirect = urlparse(redirect_url)
+                logger.debug(
+                    "Redirect target: scheme=%s host=%s path=%s",
+                    parsed_redirect.scheme,
+                    parsed_redirect.hostname,
+                    parsed_redirect.path,
+                )
             elif response.status == 200:
                 raise InvalidUsernameOrPasswordException(username)
             elif response.status == 403:
@@ -87,8 +116,7 @@ async def login(username: str, password: str) -> SessionHolder:
         # 判断重定向URL
         if redirect_url.startswith(modify_password_url_prefix):
             raise UninitializedAccountException(username, "Please change password first.")
-        elif not redirect_url.startswith(login_success_url_prefix):
-            raise ServiceUnavailableException("ticket URL not found")
+        redirect_url = _resolve_login_redirect(redirect_url)
         # 访问ticket_url，完成登录
         async with session.get(
             redirect_url,

@@ -61,7 +61,8 @@ func updateTask[V any](update func(*feign.Student) (*V, error)) func(string) (*V
 }
 
 var (
-	ClassroomChecker = cache.NewDailyStatusChecker[feign.ClassroomStatusTable](30 * time.Second)
+	// 教室预约会在当天持续变化；缓存 10 分钟，在及时性和教务系统负载之间取平衡。
+	ClassroomChecker = cache.NewIntervalStatusChecker[feign.ClassroomStatusTable](10*time.Minute, 30*time.Second)
 	CalendarChecker  = cache.NewDailyStatusChecker[feign.TeachingCalendar](30 * time.Second)
 )
 

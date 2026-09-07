@@ -19,6 +19,15 @@ class CourseDataRepositoryImpl(
         ))
     }
 
+    suspend fun replaceRemoteCoursesPreservingCustom(courses: Map<String, List<CourseElem>>) {
+        val custom = getCourseMap().orEmpty().mapValues { (_, items) -> items.filter { it.isCustom } }
+        val mergedKeys = courses.keys + custom.keys
+        val merged = mergedKeys.associateWith { day ->
+            (courses[day].orEmpty() + custom[day].orEmpty()).sortedBy { it.startTime }
+        }
+        insertCourseMap(merged)
+    }
+
     override suspend fun updateCourseMap(courses: Map<String, List<CourseElem>>) {
         source.updateCourseEntity(CourseEntity(
             courses = Json.encodeToString(courses)

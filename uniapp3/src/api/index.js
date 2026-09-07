@@ -5,6 +5,7 @@ export async function login(username, password) {
 }
 
 export const campusApi = {
+  activities: async () => unwrap(await request({ url: '/activities', auth: false })),
   profile: async () => unwrap(await request({ url: '/info' })),
   courses: async () => unwrap(await request({ url: '/courses' })),
   exams: async () => unwrap(await request({ url: '/exams' })),

@@ -48,6 +48,7 @@ type Activity struct {
 	Featured       bool      `json:"featured"`
 	Published      bool      `json:"published"`
 	SortOrder      int       `json:"sortOrder"`
+	FilterTags     []string  `json:"filterTags"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -201,12 +202,15 @@ func (s *activityStore) writeLocked() error {
 type activityHandler struct {
 	store       *activityStore
 	requestLogs *requestLogStore
+	userStats   *userStatsStore
 	dataDir     string
 	adminToken  string
 	adminOrigin string
+	filterPath  string
+	filterMu    sync.RWMutex
 }
 
-func RegisterActivityRoutes(mux *http.ServeMux, requestLogs *requestLogStore) {
+func RegisterActivityRoutes(mux *http.ServeMux, requestLogs *requestLogStore, userStats *userStatsStore) {
 	store, err := newActivityStore(ActivityDataDir)
 	if err != nil {
 		panic(err)
@@ -214,16 +218,21 @@ func RegisterActivityRoutes(mux *http.ServeMux, requestLogs *requestLogStore) {
 	handler := &activityHandler{
 		store:       store,
 		requestLogs: requestLogs,
+		userStats:   userStats,
 		dataDir:     ActivityDataDir,
 		adminToken:  os.Getenv("ACTIVITY_ADMIN_TOKEN"),
 		adminOrigin: ActivityAdminOrigin,
+		filterPath:  filepath.Join(ActivityDataDir, "activity-filters.json"),
 	}
 
 	mux.HandleFunc("/activities", handler.publicActivities)
+	mux.HandleFunc("/activity-filters", handler.publicActivityFilters)
+	mux.HandleFunc("/admin/activity-filters", handler.withCORS(handler.adminActivityFilters))
 	mux.HandleFunc("/admin/activities", handler.withCORS(handler.adminActivities))
 	mux.HandleFunc("/admin/activities/", handler.withCORS(handler.adminActivity))
 	mux.HandleFunc("/admin/activity-posters", handler.withCORS(handler.uploadPoster))
 	mux.HandleFunc("/admin/logs", handler.withCORS(handler.adminLogs))
+	mux.HandleFunc("/admin/user-stats", handler.withCORS(handler.adminUserStats))
 	posterFiles := http.StripPrefix(
 		"/activity-posters/",
 		http.FileServer(http.Dir(filepath.Join(ActivityDataDir, "posters"))),
@@ -232,6 +241,116 @@ func RegisterActivityRoutes(mux *http.ServeMux, requestLogs *requestLogStore) {
 		w.Header().Set("Cache-Control", "public, max-age=2592000, immutable")
 		posterFiles.ServeHTTP(w, r)
 	}))
+}
+
+func (h *activityHandler) readActivityFilters() ([]string, error) {
+	h.filterMu.RLock()
+	defer h.filterMu.RUnlock()
+	data, err := os.ReadFile(h.filterPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return []string{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var filters []string
+	if err := json.Unmarshal(data, &filters); err != nil {
+		return nil, err
+	}
+	return filters, nil
+}
+
+func normalizeActivityFilters(filters []string) []string {
+	result, seen := make([]string, 0, len(filters)), map[string]bool{}
+	for _, item := range filters {
+		item = strings.TrimSpace(item)
+		if item != "" && len([]rune(item)) <= 20 && !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+		if len(result) == 12 {
+			break
+		}
+	}
+	return result
+}
+
+func (h *activityHandler) publicActivityFilters(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	filters, err := h.readActivityFilters()
+	if err != nil {
+		http.Error(w, "Unable to read activity filters", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"code": 1, "message": "success", "data": filters})
+}
+
+func (h *activityHandler) adminActivityFilters(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if !h.authorize(w, r) {
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		filters, err := h.readActivityFilters()
+		if err != nil {
+			http.Error(w, "Unable to read activity filters", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, filters)
+	case http.MethodPut:
+		r.Body = http.MaxBytesReader(w, r.Body, maxActivityBodySize)
+		var payload struct {
+			Filters []string `json:"filters"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "Invalid filter payload", http.StatusBadRequest)
+			return
+		}
+		filters := normalizeActivityFilters(payload.Filters)
+		data, _ := json.MarshalIndent(filters, "", "  ")
+		h.filterMu.Lock()
+		err := os.WriteFile(h.filterPath, append(data, '\n'), 0640)
+		h.filterMu.Unlock()
+		if err != nil {
+			http.Error(w, "Unable to save activity filters", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, filters)
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *activityHandler) adminUserStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if !h.authorize(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if h.userStats == nil {
+		http.Error(w, "User statistics are not available", http.StatusServiceUnavailable)
+		return
+	}
+	from, to, err := parseUserStatsRange(r, h.userStats.trackingStartedAt())
+	if err != nil {
+		http.Error(w, "Dates must use YYYY-MM-DD and form a valid range", http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, h.userStats.snapshot(from, to))
 }
 
 func (h *activityHandler) adminLogs(w http.ResponseWriter, r *http.Request) {
@@ -504,6 +623,7 @@ func decodeActivity(w http.ResponseWriter, r *http.Request) (Activity, bool) {
 		http.Error(w, "an activity can contain at most 9 images", http.StatusBadRequest)
 		return Activity{}, false
 	}
+	activity.FilterTags = normalizeActivityFilters(activity.FilterTags)
 	if activity.PosterTitle == "" {
 		activity.PosterTitle = activity.Title
 	}

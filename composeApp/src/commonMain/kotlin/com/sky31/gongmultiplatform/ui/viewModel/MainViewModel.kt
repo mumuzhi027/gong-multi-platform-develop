@@ -124,7 +124,7 @@ class MainViewModel: ViewModel(), KoinComponent {
     suspend fun updateCourseList(): DataState {
         when(val result = courseRepository.getCourses()) {
             is NetworkResult.Success -> {
-                courseDataRepository.insertCourseMap(toCourseMap(result.data))
+                courseDataRepository.replaceRemoteCoursesPreservingCustom(toCourseMap(result.data))
 
                 getCourseListFromLocal()
 

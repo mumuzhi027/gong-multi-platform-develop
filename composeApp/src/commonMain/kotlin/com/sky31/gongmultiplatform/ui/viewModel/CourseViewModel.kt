@@ -30,6 +30,7 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 class CourseViewModel: ViewModel(), KoinComponent {
+    data class EditorState(val day: String, val week: Long, val startTime: Int, val course: CourseElem? = null)
     private val courseDataRepository: CourseDataRepositoryImpl by inject()
     private val courseRepository: CourseRepositoryImpl by inject()
 
@@ -43,6 +44,9 @@ class CourseViewModel: ViewModel(), KoinComponent {
 
     private val _sheetVisible = MutableStateFlow<Boolean>(false)
     val sheetVisible = _sheetVisible.asStateFlow()
+
+    private val _editorState = MutableStateFlow<EditorState?>(null)
+    val editorState = _editorState.asStateFlow()
 
     private val _calendar = MutableStateFlow<CalendarData?>(null)
     val calendar = _calendar.asStateFlow()
@@ -118,7 +122,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
     private suspend fun updateCourseMap(): DataState {
         when(val result = courseRepository.getCourses()) {
             is NetworkResult.Success -> {
-                courseDataRepository.insertCourseMap(toCourseMap(result.data))
+                courseDataRepository.replaceRemoteCoursesPreservingCustom(toCourseMap(result.data))
 
                 getCourseMapFromLocal()
 
@@ -168,5 +172,40 @@ class CourseViewModel: ViewModel(), KoinComponent {
 
     fun setSheetCourse(course: CourseElem) {
         _sheetCourse.value = course
+    }
+
+    fun openEditor(day: String, week: Long, startTime: Int, course: CourseElem? = null) {
+        _editorState.value = EditorState(day, week, startTime, course)
+    }
+
+    fun closeEditor() { _editorState.value = null }
+
+    fun saveCustomCourse(name: String, teacher: String, classroom: String, week: Long, start: Int, end: Int) {
+        val editor = _editorState.value ?: return
+        if (name.isBlank() || week < 1 || start !in 1..11 || end !in start..11) return
+        viewModelScope.launch {
+            val map = _courseMap.value.mapValues { it.value.toMutableList() }.toMutableMap()
+            val list = map.getOrPut(editor.day) { mutableListOf() }
+            editor.course?.takeIf { it.isCustom }?.let(list::remove)
+            list += CourseElem(name.trim(), teacher.trim(), classroom.trim(), week.toString(), start, end - start + 1, editor.day, true)
+            map[editor.day] = list.sortedBy { it.startTime }.toMutableList()
+            courseDataRepository.updateCourseMap(map)
+            getCourseMapFromLocal()
+            updateAppWidget()
+            _editorState.value = null
+        }
+    }
+
+    fun deleteCustomCourse() {
+        val editor = _editorState.value ?: return
+        val course = editor.course?.takeIf { it.isCustom } ?: return
+        viewModelScope.launch {
+            val map = _courseMap.value.mapValues { it.value.toMutableList() }.toMutableMap()
+            map[editor.day]?.remove(course)
+            courseDataRepository.updateCourseMap(map)
+            getCourseMapFromLocal()
+            updateAppWidget()
+            _editorState.value = null
+        }
     }
 }

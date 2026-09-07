@@ -7,6 +7,7 @@ const props = defineProps({
 const items = [
   { key: 'home', label: '首页', icon: 'home', url: '/pages/home/index' },
   { key: 'classroom', label: '空教室', icon: 'classroom', url: '/pages/classroom/index' },
+  { key: 'activity', label: '活动', icon: 'activity', url: '/pages/activity/index' },
   { key: 'academic', label: '成绩单', icon: 'grade', url: '/pages/academic/index' },
 ]
 
@@ -44,7 +45,7 @@ function navigate(item) {
   left: 0;
   display: flex;
   height: calc(126rpx + env(safe-area-inset-bottom));
-  padding: 10rpx 54rpx env(safe-area-inset-bottom);
+  padding: 10rpx 24rpx env(safe-area-inset-bottom);
   align-items: flex-start;
   justify-content: space-between;
   border-top: 1rpx solid var(--line);

@@ -41,6 +41,19 @@
       }
     },
     {
+      "path": "pages/activity/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/activity/detail",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/settings/index",
       "style": {
         "navigationBarTitleText": "设置"

@@ -5,10 +5,16 @@ import (
 	"net/http"
 )
 
+var UserStats *userStatsStore
+
 func StartApiServer(port int) {
 	requestLogs, err := newRequestLogStore(ActivityDataDir, defaultRequestLogCapacity)
 	if err != nil {
 		panic(fmt.Errorf("initialize request logs: %w", err))
+	}
+	UserStats, err = newUserStatsStore(ActivityDataDir)
+	if err != nil {
+		panic(fmt.Errorf("initialize user stats: %w", err))
 	}
 	server := http.NewServeMux()
 	server.HandleFunc("/login", Login)
@@ -26,7 +32,7 @@ func StartApiServer(port int) {
 	server.HandleFunc("/icalendar/courses", CoursesCalendarHandler.GetInfo)
 	server.HandleFunc("/icalendar/exams", ExamCalendarHandler.GetInfo)
 	server.HandleFunc("/icalendar", CalPage)
-	RegisterActivityRoutes(server, requestLogs)
+	RegisterActivityRoutes(server, requestLogs, UserStats)
 	fmt.Printf("Proxy Server URL: %s\n", SpiderUrl)
 	fmt.Printf("Starting server on :%d\n", port)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), requestLoggingMiddleware(server, requestLogs))
