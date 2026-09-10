@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,9 +60,33 @@ fun CourseTopBar(
     val calendar by viewModel.calendar.collectAsState()
     val currentWeekNum by viewModel.currentWeekNum.collectAsState()
     var weekListState by remember { mutableStateOf(false) }
+    var showRestoreConfirmation by remember { mutableStateOf(false) }
 
     val displayedWeek = state.currentPage + 1
     val isCurrentWeek = currentWeekNum > 0 && displayedWeek == currentWeekNum.toInt()
+
+    if (showRestoreConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showRestoreConfirmation = false },
+            title = { Text("恢复第${displayedWeek}周课表") },
+            text = {
+                Text(
+                    "将恢复本周被删除的原始课程。用户新增课程会保留；若新增课程与待恢复的原始课程节次重叠，则以原始课程为准。"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRestoreConfirmation = false
+                        viewModel.restoreRemoteCoursesForWeek(displayedWeek.toLong())
+                    }
+                ) { Text("确认恢复") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreConfirmation = false }) { Text("取消") }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -188,6 +215,10 @@ fun CourseTopBar(
             }
 
             Spacer(modifier = Modifier.weight(1f))
+
+            TextButton(onClick = { showRestoreConfirmation = true }) {
+                Text("恢复本周")
+            }
         }
     }
 }

@@ -10,6 +10,12 @@ interface CourseDataRepository {
 
     suspend fun getCourseMap(): Map<String, List<CourseElem>>?
 
+    suspend fun replaceRemoteCoursesPreservingCustom(courses: Map<String, List<CourseElem>>)
+
+    suspend fun deleteCourse(course: CourseElem)
+
+    suspend fun restoreRemoteCoursesForWeek(week: Long): Int
+
     suspend fun deleteAllCourses()
 
 }

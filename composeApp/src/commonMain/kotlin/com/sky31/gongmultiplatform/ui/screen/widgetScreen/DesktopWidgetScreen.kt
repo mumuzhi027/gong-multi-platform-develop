@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +41,7 @@ import com.sky31.gongmultiplatform.util.setDesktopWidgetEnabled
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.course
 import org.jetbrains.compose.resources.painterResource
+import kotlinx.coroutines.delay
 
 @Composable
 fun DesktopWidgetScreen() {
@@ -45,34 +50,125 @@ fun DesktopWidgetScreen() {
     val supported = desktopWidgetSupported()
     var installed by remember { mutableStateOf(isDesktopWidgetEnabled()) }
     var waitingForConfirmation by remember { mutableStateOf(false) }
+    var showAddExplanation by remember { mutableStateOf(false) }
+    var showManualGuide by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 installed = isDesktopWidgetEnabled()
-                if (installed) waitingForConfirmation = false
+                if (installed) {
+                    waitingForConfirmation = false
+                    showManualGuide = false
+                } else if (waitingForConfirmation) {
+                    showManualGuide = true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    LaunchedEffect(waitingForConfirmation) {
+        if (waitingForConfirmation) {
+            delay(2500)
+            installed = isDesktopWidgetEnabled()
+            if (!installed && lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                showManualGuide = true
+            }
+        }
+    }
+
+    val requestWidget = {
+        val accepted = setDesktopWidgetEnabled(true)
+        installed = isDesktopWidgetEnabled()
+        waitingForConfirmation = accepted && !installed
+        when {
+            installed -> Toast.show("桌面组件已添加")
+            accepted -> Toast.show("已请求系统添加，请在系统窗口中确认")
+            else -> showManualGuide = true
+        }
+    }
+
     val changeWidgetState: (Boolean) -> Unit = { requested ->
         if (requested) {
-            val accepted = setDesktopWidgetEnabled(true)
-            installed = isDesktopWidgetEnabled()
-            waitingForConfirmation = accepted && !installed
-            when {
-                installed -> Toast.show("桌面组件已添加")
-                accepted -> Toast.show("已发起添加，请在系统弹窗中确认")
-                else -> Toast.show("没有弹窗，请打开“允许创建桌面快捷方式”权限")
-            }
+            showAddExplanation = true
         } else {
             Toast.show("请在桌面长按该组件并选择移除")
         }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+
+    if (showAddExplanation) {
+        AlertDialog(
+            onDismissRequest = { showAddExplanation = false },
+            title = { Text("添加今日课程组件") },
+            text = {
+                Text(
+                    "桌面组件会在桌面显示当天课程，点击组件可进入拱拱首页。继续后，系统可能弹出添加确认窗口。"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAddExplanation = false
+                        requestWidget()
+                    }
+                ) { Text("继续添加") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddExplanation = false }) { Text("取消") }
+            }
+        )
+    }
+
+    if (showManualGuide) {
+        AlertDialog(
+            onDismissRequest = {
+                showManualGuide = false
+                waitingForConfirmation = false
+            },
+            title = { Text("系统没有显示添加窗口") },
+            text = {
+                Text(
+                    "请在系统设置中为拱拱开启“允许创建桌面快捷方式”权限，然后回来重试。若系统没有这项权限，请长按桌面空白处，进入“窗口小工具”，找到拱拱并手动添加。"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showManualGuide = false
+                        waitingForConfirmation = false
+                        showAddExplanation = true
+                    }
+                ) { Text("重新尝试") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showManualGuide = false
+                        waitingForConfirmation = false
+                    }
+                ) { Text("我知道了") }
+            }
+        )
+    }
+
+    if (showManualGuide) {
+        AlertDialog(
+            onDismissRequest = { showManualGuide = false },
+            title = { Text("系统没有弹出添加窗口") },
+            text = {
+                Text(
+                    "请先在系统设置中为拱拱开启“允许创建桌面快捷方式”权限，然后回来重试。若手机没有这项权限，请长按桌面空白处，进入“窗口小工具/桌面组件”，找到“拱拱”并手动添加。"
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showManualGuide = false }) { Text("我知道了") }
+            }
+        )
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize().safeDrawingPadding(),

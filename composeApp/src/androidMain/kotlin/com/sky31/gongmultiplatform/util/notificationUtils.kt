@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.sky31.gongmultiplatform.MainActivity
 import com.sky31.gongmultiplatform.model.ExamElem
+import com.sky31.gongmultiplatform.model.config.NotificationConfig
 import com.sky31.gongmultiplatform.receiver.CourseAlarmQueue
 import com.sky31.gongmultiplatform.receiver.DailyScheduleReceiver
 import com.sky31.gongmultiplatform.receiver.ExamAlarmQueue
@@ -22,7 +23,7 @@ import kotlinx.datetime.toInstant
 import java.util.Calendar
 import kotlin.time.ExperimentalTime
 
-const val ONE_WEEK_MILLIS = 604800000
+const val ONE_DAY_MILLIS = 86400000L
 var scheduleIntent: PendingIntent? = null
 
 actual fun scheduleCourseAlarm() {
@@ -90,7 +91,7 @@ fun setCourseAlarm() {
 }
 
 @OptIn(ExperimentalTime::class)
-actual fun scheduleExamAlarm(exams: List<ExamElem>) {
+actual fun scheduleExamAlarm(exams: List<ExamElem>, advanceDays: Int) {
     val context = runCatching { ContextProvider.context }.getOrElse {
         println("Failed to resolve exam notification context: ${it.message}")
         null
@@ -105,7 +106,10 @@ actual fun scheduleExamAlarm(exams: List<ExamElem>) {
 
             val examDateTime = LocalDateTime.parse(exam.startTime)
             val triggerMillis =
-                examDateTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() - ONE_WEEK_MILLIS
+                examDateTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds() -
+                    advanceDays.coerceAtLeast(0) * ONE_DAY_MILLIS
+
+            if (triggerMillis <= System.currentTimeMillis()) return@forEach
 
             val intent = Intent(context, ExamReminderReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
@@ -134,6 +138,32 @@ actual fun scheduleExamAlarm(exams: List<ExamElem>) {
         }
     }.onFailure {
         println("Failed to schedule exam alarms: ${it.message}")
+    }
+}
+
+actual fun applyNotificationConfig(config: NotificationConfig, exams: List<ExamElem>) {
+    val context = runCatching { ContextProvider.context }.getOrNull() ?: return
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+
+    if (config.courseNotification) {
+        setCourseAlarm()
+    } else {
+        val intent = Intent(context, DailyScheduleReceiver::class.java)
+        val pending = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        pending?.let(alarmManager::cancel)
+        scheduleIntent = null
+        CourseAlarmQueue.cancelAll()
+    }
+
+    if (config.examNotification) {
+        scheduleExamAlarm(exams, config.examReminderDaysBefore)
+    } else {
+        ExamAlarmQueue.cancelAll()
     }
 }
 

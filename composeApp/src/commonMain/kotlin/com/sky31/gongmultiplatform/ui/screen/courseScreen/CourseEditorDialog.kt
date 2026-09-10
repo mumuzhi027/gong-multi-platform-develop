@@ -43,7 +43,7 @@ fun CourseEditorDialog() {
 
             AlertDialog(
                 onDismissRequest = viewModel::closeEditor,
-                title = { Text(if (state.course == null) "自主添加课程" else "编辑自定义课程") },
+                title = { Text(if (state.course == null) "自主添加课程" else "编辑课程") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(name, { name = it }, label = { Text("课程名称") }, modifier = Modifier.fillMaxWidth())
@@ -64,8 +64,8 @@ fun CourseEditorDialog() {
                 },
                 dismissButton = {
                     Row {
-                        if (state.course?.isCustom == true) {
-                            OutlinedButton(onClick = viewModel::deleteCustomCourse) { Text("删除") }
+                        if (state.course != null) {
+                            OutlinedButton(onClick = viewModel::deleteCourse) { Text("删除课程") }
                         }
                         TextButton(onClick = viewModel::closeEditor) { Text("取消") }
                     }

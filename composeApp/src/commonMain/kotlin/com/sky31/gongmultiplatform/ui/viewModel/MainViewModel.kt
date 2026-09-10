@@ -20,6 +20,8 @@ import com.sky31.gongmultiplatform.util.getCourseList
 import com.sky31.gongmultiplatform.util.safeApiCallsSequential
 import com.sky31.gongmultiplatform.util.toCourseMap
 import com.sky31.gongmultiplatform.util.updateAppWidget
+import com.sky31.gongmultiplatform.util.scheduleCourseAlarm
+import com.sky31.gongmultiplatform.util.scheduleExamAlarm
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -71,9 +73,12 @@ class MainViewModel: ViewModel(), KoinComponent {
     init {
         viewModelScope.launch {
             getCalendarFromLocal()
+            getNotificationConfigFromLocal()
             getCourseListFromLocal()
             getExamListFromLocal()
-            getNotificationConfigFromLocal()
+            if (_notificationConfig.value.examNotification) {
+                scheduleExamAlarm(_examList.value, _notificationConfig.value.examReminderDaysBefore)
+            }
         }
     }
 
@@ -91,9 +96,9 @@ class MainViewModel: ViewModel(), KoinComponent {
             )
         )
 
-//        if(checkResults(results) && _notificationConfig.value.examNotification) {
-//            scheduleExamAlarm(_examList.value)
-//        }
+        if (results[1] == DataState.Newest && _notificationConfig.value.examNotification) {
+            scheduleExamAlarm(_examList.value, _notificationConfig.value.examReminderDaysBefore)
+        }
 
         _examBoxState.value = results[1]
     }
@@ -108,9 +113,9 @@ class MainViewModel: ViewModel(), KoinComponent {
             )
         )
 
-//        if(checkResults(results) && _notificationConfig.value.courseNotification) {
-//            scheduleCourseAlarm()
-//        }
+        if (results[1] == DataState.Newest && _notificationConfig.value.courseNotification) {
+            scheduleCourseAlarm()
+        }
 
         _courseBoxState.value = results[1]
 

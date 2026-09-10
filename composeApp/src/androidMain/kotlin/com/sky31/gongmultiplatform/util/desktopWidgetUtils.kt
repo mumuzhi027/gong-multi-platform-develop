@@ -7,7 +7,11 @@ import android.os.Build
 import com.sky31.gongmultiplatform.MainActivity
 import com.sky31.gongmultiplatform.widget.CoursesWidgetReceiver
 
-actual fun desktopWidgetSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+actual fun desktopWidgetSupported(): Boolean {
+    val context = MainActivity.getInstance() ?: return false
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+        AppWidgetManager.getInstance(context).isRequestPinAppWidgetSupported
+}
 
 actual fun isDesktopWidgetEnabled(): Boolean {
     val context = MainActivity.getInstance() ?: return false

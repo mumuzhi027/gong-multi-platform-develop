@@ -3,16 +3,19 @@ package com.sky31.gongmultiplatform.ui.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sky31.gongmultiplatform.data.repository.ConfigRepositoryImpl
+import com.sky31.gongmultiplatform.data.repository.ExamDataRepositoryImpl
 import com.sky31.gongmultiplatform.model.config.AuthConfig
 import com.sky31.gongmultiplatform.model.config.FunctionalConfig
 import com.sky31.gongmultiplatform.model.config.NotificationConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import com.sky31.gongmultiplatform.util.applyNotificationConfig
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class ConfigViewModel: ViewModel(), KoinComponent {
     val configRepository: ConfigRepositoryImpl by inject()
+    private val examDataRepository: ExamDataRepositoryImpl by inject()
 
     val notificationConfig = MutableStateFlow(NotificationConfig())
     val authConfig = MutableStateFlow(AuthConfig())
@@ -43,5 +46,9 @@ class ConfigViewModel: ViewModel(), KoinComponent {
         println("update result is $config")
 
         configRepository.updateFunctionalConfig(config)
+        applyNotificationConfig(
+            config = notificationConfig.value,
+            exams = examDataRepository.getExamList().orEmpty()
+        )
     }
 }

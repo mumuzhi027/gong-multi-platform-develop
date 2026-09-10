@@ -7,6 +7,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.sky31.gongmultiplatform.data.repository.CourseDataRepositoryImpl
+import com.sky31.gongmultiplatform.data.repository.ConfigRepositoryImpl
 import com.sky31.gongmultiplatform.data.repository.PublicDataRepositoryImpl
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.util.CustomTime
@@ -32,6 +33,7 @@ class DailyScheduleWorker(
 ): Worker(context, params), KoinComponent {
     private val publicDataRepository: PublicDataRepositoryImpl by inject()
     private val courseDataRepository: CourseDataRepositoryImpl by inject()
+    private val configRepository: ConfigRepositoryImpl by inject()
 
     private val uuidList = mutableListOf<UUID>()
 
@@ -47,10 +49,16 @@ class DailyScheduleWorker(
         uuidList.clear()
 
         CoroutineScope(Dispatchers.IO).launch {
+            val config = configRepository.getNotificationConfig() ?: return@launch
+            if (!config.courseNotification) return@launch
             getCourseList()?.let {
                 for(course in it) {
                     val startTime = startTimes[course.startTime - 1]
-                    val triggerMillis = getTriggerMillis(startTime.hour, startTime.minute)
+                    val triggerMillis = getTriggerMillis(
+                        startTime.hour,
+                        startTime.minute,
+                        config.courseReminderMinutesBefore
+                    )
 
                     if(triggerMillis > now) {
                         val delay = triggerMillis - now
@@ -95,16 +103,13 @@ class DailyScheduleWorker(
         return getStartTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
     }
 
-    private fun getTriggerMillis(hour: Int, minute: Int): Long {
-        val triggerTime = Pair(
-            first = if(minute < 10) hour - 1 else hour,
-            second = if(minute < 10) minute + 50 else minute - 10
-        )
-
+    private fun getTriggerMillis(hour: Int, minute: Int, advanceMinutes: Int): Long {
         val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, triggerTime.first)
-            set(Calendar.MINUTE, triggerTime.second)
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            add(Calendar.MINUTE, -advanceMinutes.coerceIn(0, 360))
         }
 
         return cal.timeInMillis

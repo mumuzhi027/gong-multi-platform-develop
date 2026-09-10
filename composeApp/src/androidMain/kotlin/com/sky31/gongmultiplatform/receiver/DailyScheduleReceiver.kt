@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.sky31.gongmultiplatform.data.repository.CourseDataRepositoryImpl
+import com.sky31.gongmultiplatform.data.repository.ConfigRepositoryImpl
 import com.sky31.gongmultiplatform.data.repository.PublicDataRepositoryImpl
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.util.CustomTime
@@ -27,6 +28,7 @@ import kotlin.time.ExperimentalTime
 class DailyScheduleReceiver: BroadcastReceiver(), KoinComponent {
     private val publicDataRepository: PublicDataRepositoryImpl by inject()
     private val courseDataRepository: CourseDataRepositoryImpl by inject()
+    private val configRepository: ConfigRepositoryImpl by inject()
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val startTimes = getStartTimes()
@@ -34,10 +36,16 @@ class DailyScheduleReceiver: BroadcastReceiver(), KoinComponent {
         val alarmManager = context?.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         CoroutineScope(Dispatchers.IO).launch {
+            val config = configRepository.getNotificationConfig() ?: return@launch
+            if (!config.courseNotification) return@launch
             getCourseList()?.let {
                 for(course in it) {
                     val startTime = startTimes[course.startTime - 1]
-                    val triggerMillis = getTriggerMillis(startTime.hour, startTime.minute)
+                    val triggerMillis = getTriggerMillis(
+                        startTime.hour,
+                        startTime.minute,
+                        config.courseReminderMinutesBefore
+                    )
 
                     if(triggerMillis < now) {
                         return@launch
@@ -94,16 +102,13 @@ class DailyScheduleReceiver: BroadcastReceiver(), KoinComponent {
         return getStartTime(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
     }
 
-    private fun getTriggerMillis(hour: Int, minute: Int): Long {
-        val triggerTime = Pair(
-            first = if(minute < 10) hour - 1 else hour,
-            second = if(minute < 10) minute + 50 else minute - 10
-        )
-
+    private fun getTriggerMillis(hour: Int, minute: Int, advanceMinutes: Int): Long {
         val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, triggerTime.first)
-            set(Calendar.MINUTE, triggerTime.second)
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            add(Calendar.MINUTE, -advanceMinutes.coerceIn(0, 360))
         }
 
         return cal.timeInMillis

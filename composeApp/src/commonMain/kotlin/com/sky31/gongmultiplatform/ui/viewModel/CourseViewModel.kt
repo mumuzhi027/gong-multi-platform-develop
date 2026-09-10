@@ -10,10 +10,12 @@ import com.sky31.gongmultiplatform.network.repository.CourseRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.PublicRepositoryImpl
 import com.sky31.gongmultiplatform.util.DataState
 import com.sky31.gongmultiplatform.util.NetworkResult
+import com.sky31.gongmultiplatform.util.Toast
 import com.sky31.gongmultiplatform.util.codeToDataState
 import com.sky31.gongmultiplatform.util.getWeekNum
 import com.sky31.gongmultiplatform.util.isInThisWeek
 import com.sky31.gongmultiplatform.util.safeApiCallsSequential
+import com.sky31.gongmultiplatform.util.scheduleCourseAlarm
 import com.sky31.gongmultiplatform.util.toCourseMap
 import com.sky31.gongmultiplatform.util.updateAppWidget
 import kotlinx.coroutines.flow.Flow
@@ -83,6 +85,10 @@ class CourseViewModel: ViewModel(), KoinComponent {
 //        }
 
         _courseMapState.value = results[1]
+
+        if (results[1] == DataState.Newest) {
+            scheduleCourseAlarm()
+        }
 
         runCatching {
             updateAppWidget()
@@ -184,9 +190,9 @@ class CourseViewModel: ViewModel(), KoinComponent {
         val editor = _editorState.value ?: return
         if (name.isBlank() || week < 1 || start !in 1..11 || end !in start..11) return
         viewModelScope.launch {
-            val map = _courseMap.value.mapValues { it.value.toMutableList() }.toMutableMap()
+            editor.course?.let { courseDataRepository.deleteCourse(it) }
+            val map = courseDataRepository.getCourseMap().orEmpty().mapValues { it.value.toMutableList() }.toMutableMap()
             val list = map.getOrPut(editor.day) { mutableListOf() }
-            editor.course?.takeIf { it.isCustom }?.let(list::remove)
             list += CourseElem(name.trim(), teacher.trim(), classroom.trim(), week.toString(), start, end - start + 1, editor.day, true)
             map[editor.day] = list.sortedBy { it.startTime }.toMutableList()
             courseDataRepository.updateCourseMap(map)
@@ -196,16 +202,39 @@ class CourseViewModel: ViewModel(), KoinComponent {
         }
     }
 
-    fun deleteCustomCourse() {
+    fun deleteCourse() {
         val editor = _editorState.value ?: return
-        val course = editor.course?.takeIf { it.isCustom } ?: return
+        val course = editor.course ?: return
         viewModelScope.launch {
-            val map = _courseMap.value.mapValues { it.value.toMutableList() }.toMutableMap()
-            map[editor.day]?.remove(course)
-            courseDataRepository.updateCourseMap(map)
+            courseDataRepository.deleteCourse(course)
             getCourseMapFromLocal()
             updateAppWidget()
             _editorState.value = null
+        }
+    }
+
+    fun deleteSheetCourse() {
+        val course = _sheetCourse.value ?: return
+        viewModelScope.launch {
+            courseDataRepository.deleteCourse(course)
+            getCourseMapFromLocal()
+            updateAppWidget()
+            _sheetVisible.value = false
+            _sheetCourse.value = null
+        }
+    }
+
+    fun restoreRemoteCoursesForWeek(week: Long) {
+        if (week < 1) return
+        viewModelScope.launch {
+            val restoredCount = courseDataRepository.restoreRemoteCoursesForWeek(week)
+            getCourseMapFromLocal()
+            updateAppWidget()
+            if (restoredCount > 0) {
+                Toast.show("已恢复第${week}周原课表内容")
+            } else {
+                Toast.show("第${week}周没有需要恢复的课程")
+            }
         }
     }
 }
