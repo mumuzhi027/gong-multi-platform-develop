@@ -90,6 +90,10 @@ fun toCourseMap(courses: List<CourseElem>): Map<String, List<CourseElem>> {
     }
 
     for(course in courses) {
+        if (!course.isValidForSchedule()) {
+            println("Skipped invalid course: $course")
+            continue
+        }
         val key = course.day
         map[key] = map[key]?.plus(course) ?: listOf(course)
     }
@@ -98,37 +102,70 @@ fun toCourseMap(courses: List<CourseElem>): Map<String, List<CourseElem>> {
 }
 
 fun getCourseList(courseMap: Map<String, List<CourseElem>>, calendar: CalendarData, currentTime: LocalDateTime): List<CourseElem> {
-    val result = mutableListOf<CourseElem>()
     val weekNum = getWeekNum(calendar, currentTime)
-    val courseList = courseMap[weekdayNameMap[currentTime.dayOfWeek.ordinal + 1]]
+    val courseList = courseMap[weekdayNameMap[currentTime.dayOfWeek.ordinal + 1]].orEmpty()
+    return visibleCoursesForWeek(weekNum, courseList)
+}
 
-    if(courseList !== null) {
-        for(course in courseList) {
-            if(isInThisWeek(weekNum, course)) {
-                result.add(course)
-            }
+/** 同一节次只展示一门课程，保留原始数据以便后续恢复或修改。 */
+fun visibleCoursesForWeek(week: Long, courses: List<CourseElem>): List<CourseElem> {
+    val occupied = BooleanArray(12)
+    val visible = mutableListOf<CourseElem>()
+    val candidates = courses
+        .filter { it.isValidForSchedule() && isInThisWeek(week, it) }
+        .sortedWith(compareByDescending<CourseElem> { it.isCustom }.thenBy { it.startTime })
+
+    for (course in candidates) {
+        val slots = course.startTime until (course.startTime + course.duration)
+        if (slots.any { occupied[it] }) {
+            println("Skipped overlapping course in week $week: $course")
+            continue
         }
+        slots.forEach { occupied[it] = true }
+        visible += course
     }
-
-    return result
+    return visible.sortedBy { it.startTime }
 }
 
 fun isInThisWeek(week: Long, course: CourseElem): Boolean {
-    val weeks = course.weeks.split(",")
+    if (week < 1 || course.weeks.isBlank()) return false
 
-    for(weekStr in weeks) {
-        if(weekStr.contains("-")) {
-            val weekList = weekStr.split("-")
-            if(weekList[0].toLong() <= week && weekList[1].toLong() >= week)
-                return true
+    val normalized = course.weeks
+        .replace('，', ',')
+        .replace('、', ',')
+        .replace('；', ',')
+        .replace(';', ',')
+        .replace('～', '-')
+        .replace('~', '-')
+
+    return normalized.split(',').any { rawPart ->
+        val part = rawPart.trim()
+        if (part.isEmpty()) return@any false
+
+        val numbers = Regex("\\d+").findAll(part).mapNotNull { it.value.toLongOrNull() }.toList()
+        if (numbers.isEmpty()) return@any false
+
+        val matchesNumber = if (part.contains('-') && numbers.size >= 2) {
+            week in minOf(numbers[0], numbers[1])..maxOf(numbers[0], numbers[1])
         } else {
-            if(weekStr.toLong() == week)
-                return true
+            numbers.any { it == week }
+        }
+        if (!matchesNumber) return@any false
+
+        when {
+            part.contains("单") -> week % 2L == 1L
+            part.contains("双") -> week % 2L == 0L
+            else -> true
         }
     }
-
-    return false
 }
+
+fun CourseElem.isValidForSchedule(): Boolean =
+    day in weekdayNameMap.values &&
+        startTime in 1..11 &&
+        duration > 0 &&
+        startTime + duration - 1 <= 11 &&
+        name.isNotBlank()
 
 /**
  * 获取课程状态

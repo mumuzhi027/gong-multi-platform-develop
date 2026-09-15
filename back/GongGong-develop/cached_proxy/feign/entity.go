@@ -93,6 +93,7 @@ type Score struct {
 
 type ScoreBoard struct {
 	StudentId         string   `json:"student_id"`
+	StudentType       string   `json:"student_type"`
 	Name              string   `json:"name"`
 	College           string   `json:"college"`
 	Major             string   `json:"major"`
@@ -113,5 +114,10 @@ type Rank struct {
 	ClassRank           int      `json:"class_rank"`
 	MajorRank           int      `json:"major_rank"`
 	WeightedAverageRank int      `json:"weighted_average_rank"`
+	StudentType          string   `json:"student_type"`
+	TotalPeople          int      `json:"total_people"`
+	TotalScoreRank       int      `json:"total_score_rank"`
+	DegreeCourseRank     int      `json:"degree_course_rank"`
+	GpaRank              int      `json:"gpa_rank"`
 	Terms               []string `json:"terms"`
 }

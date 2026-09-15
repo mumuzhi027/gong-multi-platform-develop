@@ -6,6 +6,7 @@ import com.sky31.gongmultiplatform.data.local.source.CourseEntitySourceImpl
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.util.decodeOrNull
 import com.sky31.gongmultiplatform.util.isInThisWeek
+import com.sky31.gongmultiplatform.util.isValidForSchedule
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.Serializable
 
@@ -43,7 +44,15 @@ class CourseDataRepositoryImpl(
     }
 
     override suspend fun getCourseMap(): Map<String, List<CourseElem>>? {
-        return source.getCourseEntity()?.let { getStoredData().courses }
+        return source.getCourseEntity()?.let {
+            getStoredData().courses.mapValues { (_, courses) ->
+                courses.filter { course ->
+                    val valid = course.isValidForSchedule()
+                    if (!valid) println("Skipped invalid cached course: $course")
+                    valid
+                }
+            }
+        }
     }
 
     override suspend fun deleteCourse(course: CourseElem) {

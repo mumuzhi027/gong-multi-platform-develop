@@ -33,8 +33,11 @@
 
         <receiver android:name=".receiver.DailyScheduleReceiver" />
 
-        <receiver android:name=".widget.CoursesWidgetReceiver"
-            android:exported="true">
+        <receiver
+            android:name=".widget.CoursesWidgetReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:label="@string/courses_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

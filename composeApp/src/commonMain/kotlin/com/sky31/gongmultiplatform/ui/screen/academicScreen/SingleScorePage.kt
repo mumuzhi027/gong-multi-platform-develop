@@ -30,10 +30,12 @@ import kotlin.math.round
 @Composable
 fun SingleScorePage(
     term: Int,
-    scoreList: List<ScoreData.ScoreElem>
+    scoreList: List<ScoreData.ScoreElem>,
+    isGraduate: Boolean = false,
+    showTermTitle: Boolean = true
 ) {
-    val compulsoryScoreList = scoreList.filter { scoreElem -> scoreElem.type == "必修" }
-    val optionalScoreList = scoreList.filter { scoreElem -> scoreElem.type == "选修" }
+    val compulsoryScoreList = scoreList.filter { it.type == "必修" }
+    val optionalScoreList = scoreList.filter { it.type == "选修" }
     val crossCourseScoreList = scoreList.filter { scoreElem -> scoreElem.type == "跨学科选修" }
 
     Box(
@@ -49,17 +51,19 @@ fun SingleScorePage(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                text = academicTermLabel(term),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 25.sp,
-                fontWeight = FontWeight(800),
-                letterSpacing = 3.sp
-            )
+            if (showTermTitle) {
+                Text(
+                    text = academicTermLabel(term),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight(800),
+                    letterSpacing = 3.sp
+                )
+            }
 
             if (compulsoryScoreList.isNotEmpty()) {
                 ScorePageFragment(
-                    title = "必修",
+                    title = if (isGraduate) "学位课" else "必修",
                     scoreList = compulsoryScoreList,
                     weightedAverage = calculateCompulsoryWeightedAverage(compulsoryScoreList)
                 )
@@ -67,7 +71,7 @@ fun SingleScorePage(
 
             if (optionalScoreList.isNotEmpty()) {
                 ScorePageFragment(
-                    title = "选修",
+                    title = if (isGraduate) "非学位课" else "选修",
                     scoreList = optionalScoreList
                 )
             }
@@ -174,7 +178,7 @@ internal fun calculateCompulsoryWeightedAverage(
     scoreList: List<ScoreData.ScoreElem>
 ): Double? {
     val compulsoryScores = scoreList.mapNotNull { scoreElem ->
-        if (scoreElem.type != "必修") return@mapNotNull null
+        if (scoreElem.type != "必修" && scoreElem.type != "学位课") return@mapNotNull null
 
         val score = scoreValue(scoreElem.score) ?: return@mapNotNull null
         val credit = scoreElem.credit.toDoubleOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null

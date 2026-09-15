@@ -2,7 +2,7 @@ import datetime
 
 import bs4
 
-from xtu_ems.common.exception import SessionInvalidException, ServiceUnavailableException
+from xtu_ems.common.exception import SessionInvalidException
 from xtu_ems.common.model import TeachingCalendar
 from xtu_ems.common.sess import HttpSessionHolder
 from xtu_ems.common.term import get_current_term
@@ -43,8 +43,8 @@ async def get_calendar(session: HttpSessionHolder) -> TeachingCalendar:
     :param session: 已登录的 HttpSessionHolder 对象
     :return: 教学周历对象
     """
-    if session.metadata.get("zf_account_not_found"):
-        raise ServiceUnavailableException(service_name="ZF EMS", message="ZF account not found")
+    # 教学周历是全校公共信息。研究生统一认证过程中也可能已经取得正方系统的
+    # 只读会话，因此不要仅凭“没有本科生学籍”标记提前拒绝请求。
     async with session.to_aiohttp_session() as http_session:
         async with http_session.get(
             "https://jw.xtu.edu.cn/jwglxt/xtgl/index_cxAreaFive.html?localeKey=zh_CN&gnmkdm=index",

@@ -20,7 +20,12 @@ val chineseNumberMap = mapOf(
 
 @OptIn(ExperimentalTime::class)
 fun getWeekNum(calendar: CalendarData, currentTime: LocalDateTime): Long {
-    val startLocalDateTime = LocalDate.parse(calendar.start).atTime(0, 0)
+    val startLocalDateTime = runCatching {
+        LocalDate.parse(calendar.start).atTime(0, 0)
+    }.getOrElse {
+        println("Failed to parse calendar start date '${calendar.start}': ${it.message}")
+        return 0
+    }
     val startInstant = startLocalDateTime.toInstant(TimeZone.currentSystemDefault())
     val currentInstant = currentTime.toInstant(TimeZone.currentSystemDefault())
 

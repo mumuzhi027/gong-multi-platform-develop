@@ -46,8 +46,13 @@ fun AcademicMainInfoBox(
 
     val majorScore by viewModel.majorScore.collectAsState()
     val minorScore by viewModel.minorScore.collectAsState()
+    val isGraduate = majorScore?.isGraduate == true
 
     var isMajor by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isGraduate) {
+        if (isGraduate) isMajor = true
+    }
 
     Column(
         modifier = Modifier
@@ -99,19 +104,21 @@ fun AcademicMainInfoBox(
                 )
 
                 AcademicSingleInfoBoxWithProgress(
-                    name = "必修学分",
+                    name = if (isGraduate) "学位课学分" else "必修学分",
                     values = majorScore?.compulsoryCredit
                 )
 
                 AcademicSingleInfoBoxWithProgress(
-                    name = "选修学分",
+                    name = if (isGraduate) "非学位课学分" else "选修学分",
                     values = majorScore?.electiveCredit
                 )
 
-                AcademicSingleInfoBoxWithProgress(
-                    name = "跨学科选修学分",
-                    values = majorScore?.crossCourseCredit
-                )
+                if (!isGraduate) {
+                    AcademicSingleInfoBoxWithProgress(
+                        name = "跨学科选修学分",
+                        values = majorScore?.crossCourseCredit
+                    )
+                }
             } else {
                 AcademicSingleInfoBox(
                     name = "绩点",
@@ -131,7 +138,7 @@ fun AcademicMainInfoBox(
 
         }
 
-        Row(
+        if (!isGraduate) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {

@@ -122,6 +122,8 @@ class ScoreBoard(BaseModel):
     """成绩信息"""
     student_id: str = ""
     """学号"""
+    student_type: Literal['undergraduate', 'graduate'] = 'undergraduate'
+    """学生类型，用于客户端切换本科生/研究生展示文案"""
     name: str = ""
     """姓名"""
     college: str = ""
@@ -163,6 +165,16 @@ class RankInfo(BaseModel):
     """专业排名"""
     weighted_average_rank: int = 0
     """加权平均成绩排名"""
+    student_type: Literal['undergraduate', 'graduate'] = 'undergraduate'
+    """学生类型"""
+    total_people: int = 0
+    """参与排名总人数"""
+    total_score_rank: int = 0
+    """总成绩排名"""
+    degree_course_rank: int = 0
+    """学位课成绩排名"""
+    gpa_rank: int = 0
+    """GPA 成绩排名"""
     terms: list[str] = ""
     """学期"""
 

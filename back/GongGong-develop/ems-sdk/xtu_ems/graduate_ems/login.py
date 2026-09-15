@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from urllib.parse import urlparse
 
 from xtu_ems.common.config import app_list_url
 from xtu_ems.common.exception import *
@@ -42,10 +44,26 @@ async def sso_auth(session: HttpSessionHolder) -> HttpSessionHolder:
         target_url = app.get("ywxturl")
         if not target_url:
             raise ServiceUnavailableException("Application URL not found")
-        async with http_session.get(target_url) as response:
-            logger.debug(f"Accessing application URL response status: {response.status}")
-            # 查看请求最后一次重定向的 URL
-            final_url = str(response.url)
-            if not final_url.startswith("https://gmsstu.xtu.edu.cn/index"):
-                raise GmsAccountNotFoundException("GMS account not found")
-            return HttpSessionHolder.from_aiohttp_session(http_session)
+        reached_gms = False
+        for attempt in range(3):
+            async with http_session.get(target_url) as response:
+                final_url = str(response.url)
+                parsed_url = urlparse(final_url)
+                reached_gms = reached_gms or parsed_url.hostname == "gmsstu.xtu.edu.cn"
+                logger.info(
+                    "研究生系统 SSO 最终地址：%s，status=%s，attempt=%s",
+                    final_url,
+                    response.status,
+                    attempt + 1,
+                )
+                # 登录后可能落到 /index，也可能恢复到上次访问的 /tab 或业务页。
+                if response.status == 200 and parsed_url.hostname == "gmsstu.xtu.edu.cn" \
+                        and parsed_url.path != "/oauthLogon":
+                    authenticated = HttpSessionHolder.from_aiohttp_session(http_session)
+                    authenticated.metadata.update(session.metadata)
+                    return authenticated
+            if attempt < 2:
+                await asyncio.sleep(0.2)
+        if reached_gms:
+            raise ServiceUnavailableException("GMS SSO", "Graduate SSO did not finish")
+        raise GmsAccountNotFoundException("GMS account not found")

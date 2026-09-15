@@ -26,13 +26,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.ui.theme.CourseColor
 import com.sky31.gongmultiplatform.ui.viewModel.CourseViewModel
-import kotlin.math.absoluteValue
 
 fun generateCourseColor(courseName: String): Color {
-    val hash = courseName.hashCode().absoluteValue
     val colors = CourseColor.entries.toTypedArray()
+    val index = (courseName.hashCode() and Int.MAX_VALUE) % colors.size
 
-    return Color(colors[hash % 10].rgb)
+    return Color(colors[index].rgb)
 }
 
 @Composable
@@ -112,6 +111,7 @@ fun CourseColumnFragment(
         courseList
             .filter { course -> course.startTime in start..end }
             .forEach { course ->
+                if (course.startTime < index) return@forEach
                 val courseColor = generateCourseColor(course.name)
                 val longestTextLength = maxOf(course.name.length, course.classroom.length)
                 val nameFontSize = when {
@@ -157,7 +157,7 @@ fun CourseColumnFragment(
 
                 Column(
                     modifier = Modifier
-                        .weight(course.duration.toFloat())
+                        .weight(minOf(course.duration, end - course.startTime + 1).toFloat())
                         .padding(horizontal = 2.dp, vertical = 3.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .clickable {

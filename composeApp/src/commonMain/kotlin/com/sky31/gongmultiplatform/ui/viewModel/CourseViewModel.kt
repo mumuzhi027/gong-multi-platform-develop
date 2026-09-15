@@ -13,11 +13,12 @@ import com.sky31.gongmultiplatform.util.NetworkResult
 import com.sky31.gongmultiplatform.util.Toast
 import com.sky31.gongmultiplatform.util.codeToDataState
 import com.sky31.gongmultiplatform.util.getWeekNum
-import com.sky31.gongmultiplatform.util.isInThisWeek
+import com.sky31.gongmultiplatform.util.visibleCoursesForWeek
 import com.sky31.gongmultiplatform.util.safeApiCallsSequential
 import com.sky31.gongmultiplatform.util.scheduleCourseAlarm
 import com.sky31.gongmultiplatform.util.toCourseMap
 import com.sky31.gongmultiplatform.util.updateAppWidget
+import com.sky31.gongmultiplatform.util.weekdayNameMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -156,10 +157,8 @@ class CourseViewModel: ViewModel(), KoinComponent {
         return _courseMap.map { courseMap ->
             val resultMap = mutableMapOf<String, List<CourseElem>>()
 
-            courseMap.forEach { (weekday: String, courses: List<CourseElem>) ->
-                val courseList = courses
-                    .filter { isInThisWeek(weekNum, it) }
-                    .sortedBy { it.startTime }
+            weekdayNameMap.values.forEach { weekday ->
+                val courseList = visibleCoursesForWeek(weekNum, courseMap[weekday].orEmpty())
 
                 resultMap[weekday] = courseList
             }

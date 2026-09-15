@@ -65,7 +65,7 @@ fun CourseScreen() {
 
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { calendar?.weeks ?: 0 }
+        pageCount = { calendar?.weeks?.coerceAtLeast(0) ?: 0 }
     )
 
     LaunchedEffect(currentWeekNum) {
@@ -117,8 +117,10 @@ fun CourseScreen() {
                 ) { page ->
                     val courseMap by viewModel.getWeekCourseMap(page.toLong() + 1).collectAsState(initial = null)
 
-                    if (calendar != null && courseMap != null) {
-                        val calendarStart = LocalDate.parse(calendar!!.start)
+                    val calendarStart = calendar?.start?.let { value ->
+                        runCatching { LocalDate.parse(value) }.getOrNull()
+                    }
+                    if (calendar != null && courseMap != null && calendarStart != null) {
                         val weekStart = calendarStart.plus(DatePeriod(days = page * 7))
 
                         Row(

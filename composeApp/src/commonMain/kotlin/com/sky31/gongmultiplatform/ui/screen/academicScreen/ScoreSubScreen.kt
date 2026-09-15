@@ -32,9 +32,14 @@ import com.sky31.gongmultiplatform.ui.viewModel.AcademicViewModel
 fun ScoreSubScreen(viewModel: AcademicViewModel) {
     val majorScore by viewModel.majorScore.collectAsState()
     val minorScore by viewModel.minorScore.collectAsState()
+    val isGraduate = majorScore?.isGraduate == true
 
     var isMajor by remember { mutableStateOf(true) }
     var selectedTerm by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(isGraduate) {
+        if (isGraduate) isMajor = true
+    }
 
     val scoreMap = remember(isMajor, majorScore, minorScore) {
         val academicInfo = if (isMajor) majorScore else minorScore
@@ -53,7 +58,7 @@ fun ScoreSubScreen(viewModel: AcademicViewModel) {
             .fillMaxSize()
             .padding(top = 10.dp, start = 10.dp, end = 10.dp),
     ) {
-        Row(
+        if (!isGraduate) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp),
@@ -71,7 +76,7 @@ fun ScoreSubScreen(viewModel: AcademicViewModel) {
             )
         }
 
-        if (terms.isNotEmpty()) {
+        if (!isGraduate && terms.isNotEmpty()) {
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -91,9 +96,20 @@ fun ScoreSubScreen(viewModel: AcademicViewModel) {
             }
         }
 
-        selectedTerm?.let { term ->
-            scoreMap[term]?.let { scores ->
-                SingleScorePage(term, scores)
+        if (isGraduate) {
+            majorScore?.scores?.takeIf { it.isNotEmpty() }?.let { scores ->
+                SingleScorePage(
+                    term = 0,
+                    scoreList = scores,
+                    isGraduate = true,
+                    showTermTitle = false
+                )
+            }
+        } else {
+            selectedTerm?.let { term ->
+                scoreMap[term]?.let { scores ->
+                    SingleScorePage(term, scores)
+                }
             }
         }
     }

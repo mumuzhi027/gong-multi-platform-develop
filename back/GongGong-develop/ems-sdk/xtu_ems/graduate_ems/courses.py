@@ -1,9 +1,120 @@
 import datetime
+import html
+import logging
+import re
+from urllib.parse import urljoin, urlparse
+
+import bs4
 
 from xtu_ems.common.exception import *
 from xtu_ems.common.model import CourseList, CourseInfo
 from xtu_ems.common.sess import HttpSessionHolder
 from xtu_ems.graduate_ems.config import get_term_code
+
+logger = logging.getLogger(__name__)
+GMS_INDEX_URL = "https://gmsstu.xtu.edu.cn/index"
+
+
+def _split_courses(value: str | None) -> list[str]:
+    if not value:
+        return []
+    normalized = html.unescape(value).replace("##", "")
+    # 页面脚本会把接口原始数据中的 [周次]/[教室] 转成 span；两种输入均兼容。
+    normalized = re.sub(
+        r"<span[^>]*>(.*?)</span>",
+        r"[\1]",
+        normalized,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    return [
+        re.sub(r"<[^>]+>", "", item).strip()
+        for item in re.split(r"<br\s*/?>", normalized, flags=re.IGNORECASE)
+        if re.sub(r"<[^>]+>", "", item).strip()
+    ]
+
+
+def _parse_course_description(course: str) -> tuple[str, str, str, str]:
+    """Parse `课程(班级)[周次]教师[教室]` returned by the graduate system."""
+    bracket_matches = list(re.finditer(r"[\[【]([^\]】]*)[\]】]", course))
+    if len(bracket_matches) < 2:
+        raise ValueError(f"Unsupported graduate course description: {course}")
+
+    first, last = bracket_matches[0], bracket_matches[-1]
+    course_with_class = course[:first.start()].strip()
+    # 只移除末尾的“...班”，避免误删课程名称本身自带的括号。
+    course_name = re.sub(r"[（(][^（）()]*班[）)]\s*$", "", course_with_class).strip()
+    weeks = first.group(1).replace("周", "").strip()
+    teacher = course[first.end():last.start()].strip()
+    classroom = last.group(1).strip()
+    return course_name or course_with_class, weeks, teacher, classroom
+
+
+def _extract_load_url(page_html: str, page_url: str) -> str | None:
+    ajax_blocks = re.split(r"\$\s*\.\s*ajax\s*\(", page_html, flags=re.IGNORECASE)
+    for block in ajax_blocks[1:]:
+        block = block[:5000]
+        if not re.search(r"type\s*:\s*['\"]post['\"]", block, flags=re.IGNORECASE):
+            continue
+        if not re.search(r"\bkblx\b", block) or not re.search(r"\btermcode\b", block):
+            continue
+        match = re.search(r"url\s*:\s*['\"]([^'\"]+)['\"]", block, flags=re.IGNORECASE)
+        if match:
+            return urljoin(page_url, match.group(1))
+    return None
+
+
+def _find_inner_course_pages(page_html: str, page_url: str) -> list[str]:
+    """Find the “我的课表” inner page hidden behind the graduate `/tab` wrapper."""
+    soup = bs4.BeautifulSoup(page_html, "html.parser")
+    preferred: list[str] = []
+    fallback: list[str] = []
+
+    def add(raw_url: str | None, target: list[str]):
+        if not raw_url or raw_url.startswith(("#", "javascript:")):
+            return
+        absolute = urljoin(page_url, raw_url)
+        parsed = urlparse(absolute)
+        if parsed.hostname != "gmsstu.xtu.edu.cn" or "logout" in parsed.path.lower():
+            return
+        if absolute not in target:
+            target.append(absolute)
+
+    for element in soup.find_all(True):
+        marker = " ".join(
+            filter(None, [element.get("title", ""), element.get_text(" ", strip=True)])
+        )
+        target = preferred if "我的课表" in marker else fallback
+        if "我的课表" in marker or element.name == "iframe":
+            for attribute in ("href", "src", "data-url", "data-href"):
+                add(element.get(attribute), target)
+
+    # EasyUI 的 tab 经常只在 JavaScript 配置中保存 href/url。
+    for block in re.split(r"\$\s*\.\s*ajax\s*\(", page_html, flags=re.IGNORECASE)[1:]:
+        match = re.search(r"url\s*:\s*['\"]([^'\"]+)['\"]", block[:3000], flags=re.IGNORECASE)
+        if match:
+            add(match.group(1), preferred if "我的课表" in block[:3000] else fallback)
+
+    for marker in re.finditer("我的课表", page_html):
+        nearby = page_html[max(0, marker.start() - 800):marker.end() + 800]
+        for match in re.finditer(
+            r"(?:href|src|url)\s*[:=]\s*['\"]([^'\"]+)['\"]",
+            nearby,
+            flags=re.IGNORECASE,
+        ):
+            add(match.group(1), preferred)
+        # 兼容 onclick="addTab('我的课表', '/混淆地址')" 一类写法。
+        for match in re.finditer(r"['\"](/[^'\"]+)['\"]", nearby):
+            add(match.group(1), preferred)
+
+    return preferred + fallback
+
+
+def _extract_current_week(page_html: str) -> int | None:
+    text = bs4.BeautifulSoup(page_html, "html.parser").get_text(" ", strip=True)
+    match = re.search(r"当前为?第\s*(\d+)\s*周", text)
+    if not match:
+        match = re.search(r"当前周(?:次)?\s*[：:]?\s*(\d+)", text)
+    return int(match.group(1)) if match else None
 
 
 def parse_course_time(rows: list[dict]) -> CourseList:
@@ -28,69 +139,103 @@ def parse_course_time(rows: list[dict]) -> CourseList:
         "无节次": 12
     }
 
-    # 按照mc字段排序
-    rows.sort(key=lambda e: time_order[e["mc"]])
+    # 接口偶尔会改变行顺序或增加未知行，先过滤再排序，避免整个课表解析失败。
+    ordered_rows = sorted(
+        (row for row in rows if row.get("mc") in time_order),
+        key=lambda row: time_order[row["mc"]]
+    )
     parsed_courses = []
+    visited: set[tuple[int, str, str]] = set()
     for idx, z in enumerate(["z1", "z2", "z3", "z4", "z5", "z6", "z7"]):  # idx: 1 ... 7; z: z1 ... z7
-        for i in range(11):  # 0 ... 10
-            courses_info = rows[i].get(z)
-            if not courses_info or courses_info.strip() == "":
+        for i, row in enumerate(ordered_rows):
+            if row["mc"] == "无节次":
                 continue
-            courses_list = courses_info.split("<br/>")
-            # 可能需要和其他行的课程合并，如果名字相同
+            for course in _split_courses(row.get(z)):
+                key = (i, z, course)
+                if key in visited:
+                    continue
 
-            for course in courses_list:
-                section = 0
-                for j in range(i, 11):
-                    if rows[j].get(z) and course in rows[j].get(z):
-                        section += 1
-                        rows[j][z] = rows[j][z].replace(course, "").strip()
-                        if rows[j][z] == "" or rows[j][z] == "<br/>":
-                            rows[j][z] = None
-                    else:
+                section = 1
+                visited.add(key)
+                for j in range(i + 1, len(ordered_rows)):
+                    if course not in _split_courses(ordered_rows[j].get(z)):
                         break
-                # 科学计算方法(物理学（硕士）)[11-16周]范楚辉[研究生院第三阶梯]
+                    visited.add((j, z, course))
+                    section += 1
+
+                try:
+                    name, weeks, teacher, classroom = _parse_course_description(course)
+                except ValueError:
+                    logger.warning("忽略无法解析的研究生课程：%s", course, exc_info=True)
+                    continue
                 parsed_courses.append(CourseInfo(
-                    name=course.split("(")[0].strip(),  # 科学计算方法
-                    weeks=course.split("[")[1].split("]")[0].replace("周", "").strip(),  # 11-16
+                    name=name,
+                    weeks=weeks,
                     day=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][idx],  # 星期几
-                    start_time=i + 1,  # 开始节次
+                    start_time=time_order[row["mc"]],
                     duration=section,  # 持续节次
-                    teacher=course.split("]")[1].split("[")[0].strip(),  # 范楚辉
-                    classroom=course.split("[")[-1].split("]")[0].strip()  # 研究生院第三阶梯
+                    teacher=teacher,
+                    classroom=classroom
                 ))
     return CourseList(courses=parsed_courses)
 
 
-async def get_course_link(session: HttpSessionHolder) -> str:
+async def get_course_context(session: HttpSessionHolder) -> tuple[str, int | None]:
     """
     获取课程链接
 
     :return: 课程链接
     """
-    import re
     async with session.to_aiohttp_session() as http_session:
-        async with http_session.get("https://gmsstu.xtu.edu.cn/index") as response:
+        async with http_session.get(GMS_INDEX_URL) as response:
             if response.status != 200:
                 raise SessionInvalidException("Failed to access index page")
             text = await response.text()
 
-            # <li><a href="/TXlIZWFydFdpbGxHb09ucHlnbC94c2tiY3gvaW5kZXgjMzY0M2I3MDktZTljYy00YWZkLTkyMTMtMTYwMjk0OWQxNTk3" target="mainFrame" title="学生课表查询">学生课表查询</a></li>
-            match = re.search(r'<a href="/([^"]+)" target="mainFrame" title="学生课表查询">', text)
-            if not match:
+            soup = bs4.BeautifulSoup(text, "html.parser")
+            link = soup.find("a", attrs={"title": "学生课表查询"})
+            if not link or not link.get("href"):
                 raise ServiceUnavailableException("Course link not found")
-            page_url = "https://gmsstu.xtu.edu.cn/" + match.group(1)
-        async with http_session.get(page_url) as response:
-            if response.status != 200:
-                raise ServiceUnavailableException("Failed to access course page")
-            text = await response.text()
-            text = text.split("function GetList_ew() {")[1]
-            match = re.search(r"url:\s*'/([^']+)'", text)
-            if not match:
-                raise ServiceUnavailableException("Course form action not found")
-            # 选择匹配的第二个项目
-            url = match.group(1)
-            return "https://gmsstu.xtu.edu.cn/" + url
+            page_url = urljoin(GMS_INDEX_URL, link["href"])
+        pending = [page_url]
+        visited: set[str] = set()
+        diagnostics = []
+        while pending and len(visited) < 8:
+            current_url = pending.pop(0)
+            if current_url in visited:
+                continue
+            visited.add(current_url)
+            async with http_session.get(current_url) as response:
+                if response.status != 200:
+                    continue
+                text = await response.text()
+                final_page_url = str(response.url)
+                page_soup = bs4.BeautifulSoup(text, "html.parser")
+                page_title = page_soup.title.get_text(" ", strip=True) if page_soup.title else ""
+                diagnostics.append(
+                    (final_page_url, page_title, len(text), "ajax" in text.lower(), "kblx" in text)
+                )
+
+                load_url = _extract_load_url(text, final_page_url)
+                if load_url:
+                    return load_url, _extract_current_week(text)
+                for inner_url in _find_inner_course_pages(text, final_page_url):
+                    if inner_url not in visited and inner_url not in pending:
+                        pending.append(inner_url)
+
+        logger.error("研究生课表加载接口未找到：visited=%s", diagnostics)
+        raise ServiceUnavailableException("Course form action not found")
+
+
+async def get_course_link(session: HttpSessionHolder) -> str:
+    return (await get_course_context(session))[0]
+
+
+async def get_current_week(session: HttpSessionHolder) -> int:
+    _, current_week = await get_course_context(session)
+    if current_week is None or current_week < 1:
+        raise ServiceUnavailableException("Current graduate teaching week not found")
+    return current_week
 
 
 async def get_courses(session: HttpSessionHolder) -> CourseList:
@@ -101,9 +246,10 @@ async def get_courses(session: HttpSessionHolder) -> CourseList:
     :return: 课程列表，每个课程是一个字典
     """
     async with session.to_aiohttp_session() as http_session:
+        term_code = get_term_code(datetime.datetime.now().date())
         payload = {
             "kblx": "xs",
-            "termcode": get_term_code(datetime.datetime.now().date())
+            "termcode": term_code
         }
         url = await get_course_link(session)
         async with http_session.post(
@@ -113,5 +259,13 @@ async def get_courses(session: HttpSessionHolder) -> CourseList:
         ) as response:
             if response.status != 200:
                 raise SessionInvalidException("Failed to fetch courses")
-            result = await response.json()
-            return parse_course_time(result['rows'])
+            result = await response.json(content_type=None)
+            rows = result.get("rows") or []
+            courses = parse_course_time(rows)
+            logger.info(
+                "研究生课表解析完成：termcode=%s, rows=%s, courses=%s",
+                term_code,
+                len(rows),
+                len(courses.courses),
+            )
+            return courses

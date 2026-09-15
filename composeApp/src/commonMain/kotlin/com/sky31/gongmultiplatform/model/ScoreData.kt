@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ScoreData(
     @SerialName("student_id") val studentId: String,
+    @SerialName("student_type") val studentType: String = "undergraduate",
     val name: String,
     val college: String,
     val major: String,
@@ -19,6 +20,9 @@ data class ScoreData(
     val cet4: String,
     val cet6: String
 ) {
+    val isGraduate: Boolean
+        get() = studentType == "graduate"
+
     @Serializable
     data class ScoreElem(
         val name: String,
@@ -28,4 +32,3 @@ data class ScoreData(
         val term: Int
     )
 }
-

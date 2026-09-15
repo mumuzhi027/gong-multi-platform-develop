@@ -1,22 +1,18 @@
 package com.sky31.gongmultiplatform.ui.component.drawer
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,11 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sky31.gongmultiplatform.network.dto.UpdateDto
 import com.sky31.gongmultiplatform.network.service.InstallService
-import com.sky31.gongmultiplatform.ui.component.CustomScrollBox
 import com.sky31.gongmultiplatform.ui.component.DialogState
 import com.sky31.gongmultiplatform.ui.component.NotificationDialog
 import com.sky31.gongmultiplatform.ui.component.ProgressBar
@@ -57,6 +53,7 @@ fun UpdateNotificationDialog(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
+    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.8f).dp
 
     val progressStateFlow = remember { MutableStateFlow(-1) }
     val stateFlow = progressStateFlow.asStateFlow()
@@ -103,7 +100,10 @@ fun UpdateNotificationDialog(
         modifier = Modifier.fillMaxWidth(0.86f)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxDialogHeight)
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 modifier = Modifier.padding(start = 15.dp, top = 15.dp),
@@ -131,10 +131,9 @@ fun UpdateNotificationDialog(
                 )
             }
 
-            CustomScrollBox(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 160.dp)
                     .padding(5.dp)
                     .background(colorScheme.background, shape = RoundedCornerShape(10.dp))
                     .padding(10.dp)
@@ -152,12 +151,7 @@ fun UpdateNotificationDialog(
                     .height(50.dp),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedContent(
-                    targetState = progressBarVisible,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "update_progress"
-                ) { downloading ->
-                    if (downloading) {
+                if (progressBarVisible) {
                         ProgressBar(
                             progressStateFlow = stateFlow,
                             modifier = Modifier
@@ -165,11 +159,11 @@ fun UpdateNotificationDialog(
                                 .fillMaxWidth()
                                 .height(10.dp)
                         )
-                    } else {
+                } else {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(IntrinsicSize.Min)
+                                .height(50.dp)
                                 .drawBehind {
                                     val strokeWidth = 2.dp.toPx()
                                     val y = strokeWidth / 2
@@ -220,7 +214,6 @@ fun UpdateNotificationDialog(
                                 textAlign = TextAlign.Center
                             )
                         }
-                    }
                 }
             }
         }
@@ -231,7 +224,7 @@ fun UpdateNotificationDialog(
 private fun DividerSpacer(color: androidx.compose.ui.graphics.Color) {
     Spacer(
         modifier = Modifier
-            .fillMaxHeight()
+            .height(50.dp)
             .width(2.dp)
             .background(color)
     )

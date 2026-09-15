@@ -49,6 +49,7 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
     val majorScore by viewModel.majorScore.collectAsState()
     val compulsoryRank by viewModel.compulsoryRank.collectAsState()
     val totalRank by viewModel.totalRank.collectAsState()
+    val isGraduate = majorScore?.isGraduate == true
 
     var statisticsType by remember { mutableStateOf(StatisticsType.All) }
 
@@ -81,7 +82,7 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                 AcademicMainInfoBox(viewModel)
             }
 
-            Box(
+            if (!isGraduate) Box(
                 modifier = Modifier
                     .padding(top = 15.dp)
                     .fillMaxWidth()
@@ -158,10 +159,12 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                             .background(MaterialTheme.colorScheme.surface)
                     )
 
-                    StatisticsTypeSwitcher(
-                        selectedType = statisticsType,
-                        onTypeSelected = { statisticsType = it }
-                    )
+                    if (!isGraduate) {
+                        StatisticsTypeSwitcher(
+                            selectedType = statisticsType,
+                            onTypeSelected = { statisticsType = it }
+                        )
+                    }
 
                     CustomScrollBox(
                         modifier = Modifier
@@ -170,6 +173,28 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        if (isGraduate) {
+                            AcademicSingleInfoBox(
+                                name = "平均绩点",
+                                value = formatAcademicValue(totalRank?.gpa ?: majorScore?.gpa)
+                            )
+                            AcademicSingleInfoBox(
+                                name = "总成绩排名",
+                                value = formatRankValue(totalRank?.totalScoreRank)
+                            )
+                            AcademicSingleInfoBox(
+                                name = "学位课成绩排名",
+                                value = formatRankValue(totalRank?.degreeCourseRank)
+                            )
+                            AcademicSingleInfoBox(
+                                name = "GPA成绩排名",
+                                value = formatRankValue(totalRank?.gpaRank)
+                            )
+                            AcademicSingleInfoBox(
+                                name = "总人数",
+                                value = formatRankValue(totalRank?.totalPeople)
+                            )
+                        } else {
                         AcademicSingleInfoBox(
                             name = "平均学分绩点",
                             value = formatAcademicValue(currentRank?.gpa)
@@ -200,6 +225,7 @@ fun MainInfoSubScreen(viewModel: AcademicViewModel) {
                                 name = "加权平均成绩排名",
                                 value = formatRankValue(compulsoryRank?.weightedAverageRank)
                             )
+                        }
                         }
                     }
                 }

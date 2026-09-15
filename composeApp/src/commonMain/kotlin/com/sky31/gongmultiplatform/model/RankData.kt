@@ -16,5 +16,10 @@ data class RankData(
     // 学期
     val terms: List<String>,
     // 加权平均成绩排名
-    @SerialName("weighted_average_rank") val weightedAverageRank: Int = 0
+    @SerialName("weighted_average_rank") val weightedAverageRank: Int = 0,
+    @SerialName("student_type") val studentType: String = "undergraduate",
+    @SerialName("total_people") val totalPeople: Int = 0,
+    @SerialName("total_score_rank") val totalScoreRank: Int = 0,
+    @SerialName("degree_course_rank") val degreeCourseRank: Int = 0,
+    @SerialName("gpa_rank") val gpaRank: Int = 0
 )
