@@ -8,8 +8,8 @@ import (
 
 // SpiderUrl 爬虫地址
 var (
-	SpiderUrl = os.Getenv("SPIDER_URL")
-	ActivityDataDir = envOrDefault("ACTIVITY_DATA_DIR", "./_data/activities")
+	SpiderUrl           = os.Getenv("SPIDER_URL")
+	ActivityDataDir     = envOrDefault("ACTIVITY_DATA_DIR", "./_data/activities")
 	ActivityAdminOrigin = envOrDefault("ACTIVITY_ADMIN_ORIGIN", "*")
 )
 

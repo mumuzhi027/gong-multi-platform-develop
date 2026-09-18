@@ -6,18 +6,22 @@ import com.sky31.gongmultiplatform.network.repository.PublicRepositoryImpl
 import com.sky31.gongmultiplatform.util.NetworkResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.Ignore
 import kotlin.test.assertTrue
 
 class IntegrationTest {
 
     @Test
+    @Ignore
     fun getPublicTest() = runTest {
         val client = TestClientProvider.createIntegrationTest()
 
         val authRepository = AuthRepositoryImpl(client)
         val publicRepository = PublicRepositoryImpl(client)
 
-        val loginResult = authRepository.login("202105650301", "13586591252Xx_")
+        // Intentionally disabled by default. Run an external integration harness
+        // with credentials injected from its secret store; never commit them.
+        val loginResult = authRepository.login("INJECT_AT_RUNTIME", "INJECT_AT_RUNTIME")
 
         assertTrue { loginResult is NetworkResult.Success }
 

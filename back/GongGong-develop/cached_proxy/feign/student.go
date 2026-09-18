@@ -47,6 +47,10 @@ type StudentImpl struct {
 func NewStudentImpl(username string, password string, client SpiderClient) (*StudentImpl, error) {
 	s := StudentImpl{username: username, password: password, spider: client}
 	_, err := s.refreshDynamicToken(3)
+	// Keep the provider credential only for the initial exchange. Session expiry
+	// is handled by asking the user to authenticate again, never by retaining a
+	// recoverable campus password in memory or on disk.
+	s.password = ""
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +63,9 @@ func (s *StudentImpl) Username() string {
 
 // refreshDynamicToken 刷新动态token
 func (s *StudentImpl) refreshDynamicToken(maxRetryTime int) (string, error) {
+	if s.password == "" {
+		return "", fmt.Errorf("unauthorized")
+	}
 	var finalError error
 	version := s.version
 	s.mu.Lock()

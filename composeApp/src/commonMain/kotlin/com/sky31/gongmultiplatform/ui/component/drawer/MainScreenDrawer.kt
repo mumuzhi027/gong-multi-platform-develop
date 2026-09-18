@@ -13,6 +13,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +33,7 @@ import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.about
 import gongmultiplatform.composeapp.generated.resources.settings
 import gongmultiplatform.composeapp.generated.resources.course
+import gongmultiplatform.composeapp.generated.resources.gonggong_logo
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -82,6 +84,16 @@ fun MainScreenDrawer(
             )
 
             IconRow(
+                icon = Res.drawable.gonggong_logo,
+                text = "拱拱AI",
+                badge = "Beta",
+                click = {
+                    scope.launch { state.close() }
+                    overloadController.navigate("gongAI")
+                }
+            )
+
+            IconRow(
                 icon = Res.drawable.settings,
                 text = "设置",
                 click = {
@@ -119,6 +131,7 @@ fun MainScreenDrawer(
 fun IconRow(
     icon: DrawableResource,
     text: String,
+    badge: String? = null,
     click: () -> Unit
 ) {
     Row(
@@ -146,5 +159,19 @@ fun IconRow(
             modifier = Modifier
                 .padding(top = 10.dp, bottom = 10.dp)
         )
+
+        if (badge != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                )
+            }
+        }
     }
 }

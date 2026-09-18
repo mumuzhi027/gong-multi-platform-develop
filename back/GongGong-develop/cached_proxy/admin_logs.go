@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -174,7 +176,7 @@ type requestLogResponseWriter struct {
 
 func (w *requestLogResponseWriter) SetRequestAudit(event string, account string) {
 	w.event = strings.ToLower(strings.TrimSpace(event))
-	w.account = sanitizeAuditAccount(account)
+	w.account = logAuditAccount(account)
 }
 
 func (w *requestLogResponseWriter) WriteHeader(status int) {
@@ -247,6 +249,23 @@ func sanitizeAuditAccount(account string) string {
 		account = account[:64]
 	}
 	return account
+}
+
+func hashedAuditAccount(account string) string {
+	account = sanitizeAuditAccount(account)
+	if account == "" {
+		return ""
+	}
+	hash := sha256.Sum256([]byte(account))
+	return fmt.Sprintf("%x", hash[:6])
+}
+
+func logAuditAccount(account string) string {
+	account = sanitizeAuditAccount(account)
+	if strings.EqualFold(os.Getenv("LOG_ACCOUNT_IDS"), "true") || os.Getenv("LOG_ACCOUNT_IDS") == "1" {
+		return account
+	}
+	return hashedAuditAccount(account)
 }
 
 func extractLogMessage(status int, responseBody string) string {

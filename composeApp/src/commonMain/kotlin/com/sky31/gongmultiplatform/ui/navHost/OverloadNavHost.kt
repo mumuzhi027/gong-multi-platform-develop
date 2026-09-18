@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.sky31.gongmultiplatform.di.LocalOverloadNavController
 import com.sky31.gongmultiplatform.ui.screen.overload.NotificationRequestScreen
 import com.sky31.gongmultiplatform.ui.screen.widgetScreen.DesktopWidgetScreen
+import com.sky31.gongmultiplatform.ui.screen.gongAi.GongAiScreen
 import com.sky31.gongmultiplatform.util.hasPostNotificationPermission
 import kotlinx.coroutines.delay
 
@@ -190,6 +191,24 @@ fun OverloadNavHost() {
                     }
                 ) {
                     DesktopWidgetScreen()
+                }
+
+                composable(
+                    route = "gongAI",
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing)
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing)
+                        )
+                    }
+                ) {
+                    GongAiScreen(onBack = { navController.popBackStack() })
                 }
             }
         }

@@ -1,5 +1,6 @@
 import binascii
 import logging
+import os
 from typing import Generic, TypeVar, Callable, Any, Awaitable
 
 import requests.exceptions
@@ -23,10 +24,10 @@ from xtu_ems.graduate_ems.transcript import (
     get_transcript_scoreboard as gms_get_transcript_scoreboard,
     total_rank_getter as gms_total_rank_getter,
 )
-from xtu_ems.zf_ems.calendar import get_calendar
+from xtu_ems.zf_ems.calendar import get_calendar as zf_get_calendar
 from xtu_ems.zf_ems.classroom_status import get_today_classroom, get_tomorrow_classroom
 from xtu_ems.zf_ems.courses import get_courses as zf_get_courses
-from xtu_ems.zf_ems.exams import get_exams
+from xtu_ems.zf_ems.exams import get_exams as zf_get_exams
 from xtu_ems.zf_ems.personal_info import get_student_info
 from xtu_ems.zf_ems.transcript import get_transcript_scoreboard, empty_transcript_scoreboard, rank_getter, \
     compulsory_rank_getter
@@ -62,7 +63,7 @@ async def dynamic_calendar_getter(session: HttpSessionHolder):
     if session.metadata.get("zf_account_not_found"):
         logger.debug("尝试使用研究生教务系统获取教学周历")
         return await gms_get_calendar(session)
-    return await get_calendar(session)
+    return await zf_get_calendar(session)
 
 
 async def dynamic_scores_getter(session: HttpSessionHolder):
@@ -87,7 +88,7 @@ async def dynamic_compulsory_rank_getter(session: HttpSessionHolder):
 async def dynamic_exams_getter(session: HttpSessionHolder):
     if session.metadata.get("zf_account_not_found"):
         return ExamInfoList()
-    return await get_exams(session)
+    return await zf_get_exams(session)
 
 
 courses_table_getter = dynamic_courses_getter
@@ -116,6 +117,14 @@ calendar_getter = dynamic_calendar_getter
 
 T = TypeVar("T")
 logger = logging.getLogger("api")
+
+
+def _account_log_id(account: str) -> str:
+    """Show the account only in deployments that explicitly enable diagnostics."""
+    if os.getenv("LOG_ACCOUNT_IDS", "false").lower() in {"1", "true", "yes"}:
+        return account
+    import hashlib
+    return hashlib.sha256(account.encode("utf-8")).hexdigest()[:12]
 
 
 class Resp(BaseModel, Generic[T]):
@@ -157,7 +166,8 @@ class Resp(BaseModel, Generic[T]):
 
 @api.post("/login")
 async def login(username: str = Body(description="学号"), password: str = Body(description="密码")):
-    logger.debug(f"【{username}】开始登陆")
+    account_log_id = _account_log_id(username)
+    logger.debug(f"【{account_log_id}】开始登陆")
     from xtu_ems.zf_sso.login import login as sso_login
     from xtu_ems.zf_ems.login import sso_auth as zf_sso_auth
     session_holder: HttpSessionHolder = HttpSessionHolder()
@@ -166,27 +176,27 @@ async def login(username: str = Body(description="学号"), password: str = Body
         session_holder = await sso_login(username, password)
         session_holder = await zf_sso_auth(session_holder)
     except ServiceUnavailableException as e:
-        logger.exception(f"【{username}】登陆时远程连接错误")
+        logger.exception(f"【{account_log_id}】登陆时远程连接错误")
         return Resp.ems_request_failed("远程连接错误")
     except InvalidUsernameOrPasswordException as e:
-        logger.warning(f"【{username}】登陆时用户名或密码错误")
+        logger.warning(f"【{account_log_id}】登陆时用户名或密码错误")
         return Resp.unauthorized("用户名或密码错误")
     except AccountDisabledException as e:
-        logger.warning(f"【{username}】登陆时账户被禁用")
+        logger.warning(f"【{account_log_id}】登陆时账户被禁用")
         return Resp.account_disabled("账户被禁用")
     except ZfAccountNotFoundException as e:
-        logger.warning(f"【{username}】登陆时正方账户未找到")
+        logger.warning(f"【{account_log_id}】登陆时正方账户未找到")
         session_holder.metadata["zf_account_not_found"] = True
     except UninitializedAccountException as e:
-        logger.warning(f"【{username}】登陆时账户未初始化")
+        logger.warning(f"【{account_log_id}】登陆时账户未初始化")
         return Resp.not_initialized("账户未初始化，请先登录教务系统完成认证")
     except Exception as e:
-        logger.exception(f"【{username}】登陆时未知错误")
+        logger.exception(f"【{account_log_id}】登陆时未知错误")
         return Resp.error("未知错误")
     if session_holder.metadata.get("zf_account_not_found"):
-        logger.info(f"【{username}】尝试研究生教务系统")
+        logger.info(f"【{account_log_id}】尝试研究生教务系统")
     else:
-        logger.info(f"本科生【{username}】登陆成功")
+        logger.info(f"本科生【{account_log_id}】登陆成功")
         session_holder.metadata["account"] = username
         session_holder.metadata["student_type"] = "undergraduate"
         return Resp.success(data={"token": session_holder.to_token()})
@@ -195,24 +205,24 @@ async def login(username: str = Body(description="学号"), password: str = Body
     try:
         session_holder = await graduate_sso_auth(session_holder)
     except ServiceUnavailableException as e:
-        logger.exception(f"【{username}】登陆时远程连接错误")
+        logger.exception(f"【{account_log_id}】登陆时远程连接错误")
         return Resp.ems_request_failed("远程连接错误")
     except InvalidUsernameOrPasswordException as e:
-        logger.warning(f"【{username}】登陆时用户名或密码错误")
+        logger.warning(f"【{account_log_id}】登陆时用户名或密码错误")
         return Resp.unauthorized("用户名或密码错误")
     except AccountDisabledException as e:
-        logger.warning(f"【{username}】登陆时账户被禁用")
+        logger.warning(f"【{account_log_id}】登陆时账户被禁用")
         return Resp.account_disabled("账户被禁用")
     except GmsAccountNotFoundException as e:
-        logger.warning(f"【{username}】登陆时研究生教务账户未找到")
+        logger.warning(f"【{account_log_id}】登陆时研究生教务账户未找到")
         return Resp.not_initialized("研究生教务账户不存在或尚未初始化")
     except UninitializedAccountException as e:
-        logger.warning(f"【{username}】登陆时账户未初始化")
+        logger.warning(f"【{account_log_id}】登陆时账户未初始化")
         return Resp.not_initialized("账户未初始化，请先登录教务系统完成认证")
     except Exception as e:
-        logger.exception(f"【{username}】登陆时未知错误")
+        logger.exception(f"【{account_log_id}】登陆时未知错误")
         return Resp.error("未知错误")
-    logger.info(f"研究生【{username}】登陆成功")
+    logger.info(f"研究生【{account_log_id}】登陆成功")
     session_holder.metadata["zf_account_not_found"] = True
     session_holder.metadata["qz_account_not_found"] = True
     session_holder.metadata["account"] = username

@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,11 @@ private enum class ActivityPeriod(val label: String) {
 @Composable
 fun ActivityScreen(onActivityClick: (String) -> Unit) {
     val viewModel = getKoin().get<ActivityViewModel>()
+    LaunchedEffect(viewModel) {
+        // The singleton may have made its first request while login/session setup
+        // was still settling. Entering the page should always get one fresh chance.
+        viewModel.refresh()
+    }
     val activities by viewModel.activities.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val usingFallback by viewModel.usingFallback.collectAsState()

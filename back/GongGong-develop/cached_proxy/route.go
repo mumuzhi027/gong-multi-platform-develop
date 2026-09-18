@@ -74,7 +74,7 @@ type TokenService struct {
 
 func (t *TokenService) checkToken(w http.ResponseWriter, r *http.Request) account2.Account {
 	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
+	if !strings.HasPrefix(authHeader, "Bearer ") {
 		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
 		return nil
 	}
@@ -122,7 +122,7 @@ func newInfoResponse(info any, err error) (int, feign.CommonResponse[any]) {
 }
 
 func (c *InfoGetter[V]) GetInfo(w http.ResponseWriter, r *http.Request) {
-	log.Printf("GetInfo %s\n", r.RequestURI)
+	log.Printf("GetInfo %s\n", r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -224,7 +224,7 @@ var (
 )
 
 func (c *CalendarGetter[V]) GetInfo(w http.ResponseWriter, r *http.Request) {
-	log.Printf("GetInfo %s\n", r.RequestURI)
+	log.Printf("GetInfo %s\n", r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return

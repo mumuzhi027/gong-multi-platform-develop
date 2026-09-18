@@ -101,6 +101,14 @@ func (s *activityStore) list(includeUnpublished bool) []Activity {
 	activities := make([]Activity, 0, len(s.items))
 	for _, activity := range s.items {
 		if includeUnpublished || activity.Published {
+			// Older records may not contain these optional arrays. Encoding a nil
+			// slice as null breaks clients whose schema expects a non-null list.
+			if activity.Images == nil {
+				activity.Images = []string{}
+			}
+			if activity.FilterTags == nil {
+				activity.FilterTags = []string{}
+			}
 			activities = append(activities, activity)
 		}
 	}
@@ -393,9 +401,9 @@ func (h *activityHandler) publicActivities(w http.ResponseWriter, r *http.Reques
 		activities = activities[:limit]
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"code": 1,
+		"code":    1,
 		"message": "success",
-		"data": activities,
+		"data":    activities,
 	})
 }
 

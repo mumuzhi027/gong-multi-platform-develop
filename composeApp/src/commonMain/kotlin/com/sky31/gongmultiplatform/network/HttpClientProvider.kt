@@ -7,12 +7,8 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.resources.Resources
-import io.ktor.client.request.HttpSendPipeline
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.encodedPath
 import io.ktor.serialization.kotlinx.json.json
@@ -29,10 +25,6 @@ object HttpClientProvider {
             }
 
             install(Resources)
-
-            install(Logging) {
-                level = LogLevel.HEADERS
-            }
 
             install(Auth) {
                 bearer {
@@ -56,14 +48,6 @@ object HttpClientProvider {
                     port = apiEndpoint.port
                 }
                 contentType(ContentType.Application.Json)
-            }
-        }.apply {
-            sendPipeline.intercept(HttpSendPipeline.Monitoring) {
-                val authHeader = context.headers[HttpHeaders.Authorization]
-                val path = context.url.encodedPath
-                println("最终请求的 Authorization: $authHeader")
-                println(path)
-                proceed()
             }
         }
 }

@@ -1,0 +1,53 @@
+capabilities:
+  - id: academic.schedule.query
+    provider: xtu_academic
+    risk: low
+    read_only: true
+    confirmation: none
+    privacy: L1
+  - id: academic.grade.query
+    provider: xtu_academic
+    risk: medium
+    read_only: true
+    confirmation: none
+    privacy: L2
+  - id: academic.exam.query
+    provider: xtu_academic
+    risk: low
+    read_only: true
+    confirmation: none
+    privacy: L1
+  - id: room.search
+    provider: xtu_academic
+    risk: low
+    read_only: true
+    confirmation: none
+    privacy: L0
+  - id: room.reserve
+    provider: xtu_academic
+    risk: high
+    read_only: false
+    confirmation: explicit
+    privacy: L2
+    idempotency: required
+  - id: leave.apply
+    provider: xtu_extracurricular
+    risk: high
+    read_only: false
+    confirmation: explicit
+    privacy: L2
+    idempotency: required
+  - id: leave.status
+    provider: xtu_extracurricular
+    risk: medium
+    read_only: true
+    confirmation: none
+    privacy: L2
+  - id: leave.withdraw
+    provider: xtu_extracurricular
+    risk: high
+    read_only: false
+    confirmation: explicit
+    privacy: L2
+    idempotency: required
+

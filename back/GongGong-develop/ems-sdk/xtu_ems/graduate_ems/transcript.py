@@ -419,12 +419,7 @@ async def _load_score_source(session: HttpSessionHolder):
             async with http_session.get(score_page) as response:
                 if response.status == 200:
                     summary_html = await response.text()
-                    logger.info(
-                        "研究生成绩统计页面响应：url=%s, final_url=%s, length=%s",
-                        score_page,
-                        response.url,
-                        len(summary_html),
-                    )
+                    logger.info("研究生成绩统计页面响应：length=%s", len(summary_html))
                     summary_requests = _find_summary_requests(summary_html, str(response.url))
                     summary_field_mapping = _find_summary_field_mapping(summary_html)
                     logger.info(
@@ -497,14 +492,7 @@ async def _load_score_source(session: HttpSessionHolder):
                     f"成绩接口返回 HTTP {response.status}",
                 )
             response_text = await response.text()
-            response_url = str(response.url)
-        logger.info(
-            "研究生成绩接口响应：method=%s, url=%s, final_url=%s, length=%s",
-            method,
-            score_url,
-            response_url,
-            len(response_text),
-        )
+        logger.info("研究生成绩接口响应：method=%s, length=%s", method, len(response_text))
         try:
             payload = json.loads(response_text)
         except json.JSONDecodeError as exc:

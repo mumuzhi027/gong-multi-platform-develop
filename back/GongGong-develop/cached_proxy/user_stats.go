@@ -47,10 +47,10 @@ type userStatsStore struct {
 }
 
 type userStatsDay struct {
-	Date       string `json:"date"`
-	NewUsers   int    `json:"newUsers"`
-	ActiveUsers int   `json:"activeUsers"`
-	LoginCount int64  `json:"loginCount"`
+	Date        string `json:"date"`
+	NewUsers    int    `json:"newUsers"`
+	ActiveUsers int    `json:"activeUsers"`
+	LoginCount  int64  `json:"loginCount"`
 }
 
 type userStatsSnapshot struct {

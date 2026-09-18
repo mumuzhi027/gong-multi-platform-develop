@@ -166,7 +166,7 @@ def parse_course_time(rows: list[dict]) -> CourseList:
                 try:
                     name, weeks, teacher, classroom = _parse_course_description(course)
                 except ValueError:
-                    logger.warning("忽略无法解析的研究生课程：%s", course, exc_info=True)
+                    logger.warning("忽略一条无法解析的研究生课程记录")
                     continue
                 parsed_courses.append(CourseInfo(
                     name=name,
@@ -223,7 +223,7 @@ async def get_course_context(session: HttpSessionHolder) -> tuple[str, int | Non
                     if inner_url not in visited and inner_url not in pending:
                         pending.append(inner_url)
 
-        logger.error("研究生课表加载接口未找到：visited=%s", diagnostics)
+        logger.error("研究生课表加载接口未找到：visited_count=%s", len(diagnostics))
         raise ServiceUnavailableException("Course form action not found")
 
 

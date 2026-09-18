@@ -74,8 +74,6 @@ class AuthViewModel: ViewModel(), KoinComponent {
             println("Failed to load token from local settings: ${it.message}")
             null
         }
-        println("load from local: $token")
-
         if(token != null) {
             syncAccessToken(token)
             _authState.value.isAuthenticated = true

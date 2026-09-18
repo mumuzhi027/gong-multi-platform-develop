@@ -353,13 +353,7 @@ async def get_student_info(session: HttpSessionHolder) -> StudentBasicInfo:
                             basic_response.status,
                             method,
                         )
-            logger.info(
-                "研究生个人信息解析完成：page=%s, basic_api=%s, name=%s, major=%s",
-                personal_page,
-                bool(basic_request),
-                bool(info.name),
-                bool(info.major),
-            )
+            logger.info("研究生个人信息解析完成：basic_api=%s, name=%s, major=%s", bool(basic_request), bool(info.name), bool(info.major))
             if not info.name or not info.major:
                 _log_page_structure(page_html)
             return info

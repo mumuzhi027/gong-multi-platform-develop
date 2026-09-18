@@ -9,6 +9,7 @@ import com.sky31.gongmultiplatform.network.repository.ExamRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.NotificationRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.PublicRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.UserInfoRepositoryImpl
+import com.sky31.gongmultiplatform.network.repository.GongAiRepository
 import org.koin.dsl.module
 
 val networkModule = module {
@@ -21,4 +22,5 @@ val networkModule = module {
     single<AuthRepositoryImpl> { AuthRepositoryImpl(get<HttpClientProvider>().client) }
     single<NotificationRepositoryImpl> { NotificationRepositoryImpl() }
     single<UserInfoRepositoryImpl> { UserInfoRepositoryImpl(get<HttpClientProvider>().client) }
+    single<GongAiRepository> { GongAiRepository(get<HttpClientProvider>().client) }
 }

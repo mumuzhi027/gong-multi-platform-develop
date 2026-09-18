@@ -220,7 +220,7 @@ async def get_transcript_scoreboard(session: HttpSessionHolder) -> ScoreBoard:
         ) as response:
             if response.status != 200:
                 raise SessionInvalidException("Failed to fetch transcript page")
-            logger.debug(await response.text())
+            await response.read()
 
         async with http_session.post(
             url=TRANSCRIPT_EXPORT_URL,
@@ -233,7 +233,7 @@ async def get_transcript_scoreboard(session: HttpSessionHolder) -> ScoreBoard:
             resource_url = await response.text()
 
         pdf_url = "https://jw.xtu.edu.cn" + resource_url.replace('"', "").replace("\\", "")
-        logger.info("get pdf from [%s]", pdf_url)
+        logger.info("成绩单 PDF 地址获取成功")
         async with http_session.get(
             url=pdf_url,
             allow_redirects=False,

@@ -50,12 +50,7 @@ async def sso_auth(session: HttpSessionHolder) -> HttpSessionHolder:
                 final_url = str(response.url)
                 parsed_url = urlparse(final_url)
                 reached_gms = reached_gms or parsed_url.hostname == "gmsstu.xtu.edu.cn"
-                logger.info(
-                    "研究生系统 SSO 最终地址：%s，status=%s，attempt=%s",
-                    final_url,
-                    response.status,
-                    attempt + 1,
-                )
+                logger.info("研究生系统 SSO 跳转完成：host=%s，status=%s，attempt=%s", parsed_url.hostname, response.status, attempt + 1)
                 # 登录后可能落到 /index，也可能恢复到上次访问的 /tab 或业务页。
                 if response.status == 200 and parsed_url.hostname == "gmsstu.xtu.edu.cn" \
                         and parsed_url.path != "/oauthLogon":

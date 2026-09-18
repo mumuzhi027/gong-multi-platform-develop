@@ -33,6 +33,7 @@ func StartApiServer(port int) {
 	server.HandleFunc("/icalendar/exams", ExamCalendarHandler.GetInfo)
 	server.HandleFunc("/icalendar", CalPage)
 	RegisterActivityRoutes(server, requestLogs, UserStats)
+	RegisterGongAIRoutes(server)
 	fmt.Printf("Proxy Server URL: %s\n", SpiderUrl)
 	fmt.Printf("Starting server on :%d\n", port)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), requestLoggingMiddleware(server, requestLogs))

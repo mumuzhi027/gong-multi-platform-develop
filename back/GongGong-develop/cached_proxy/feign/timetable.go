@@ -111,18 +111,25 @@ type TermTimeTable struct {
 }
 
 func (t *TeachingCalendar) GetTermTimeTable() TermTimeTable {
-	sepTime := summerEnd
-	termTimeTable := TermTimeTable{
-		PreTimeTable: SummerTimeTable,
-		SufTimeTable: WinterTimeTable,
-	}
 	startTime := t.StartTime()
-	if startTime.Month() > sepTime.Month() {
-		sepTime = summerStart
+	sepYear := startTime.Year()
+	sepMonth := summerEnd.Month()
+	termTimeTable := TermTimeTable{PreTimeTable: SummerTimeTable, SufTimeTable: WinterTimeTable}
+	// Spring terms start before the May switch and therefore use winter time
+	// first. Autumn terms start before the October switch and use summer time
+	// first. The previous implementation compared February with October and
+	// incorrectly produced a 34-week split for spring terms.
+	if startTime.Month() < summerStart.Month() {
+		sepMonth = summerStart.Month()
+		termTimeTable.PreTimeTable = WinterTimeTable
+		termTimeTable.SufTimeTable = SummerTimeTable
+	} else if startTime.Month() >= summerEnd.Month() {
+		sepYear++
+		sepMonth = summerStart.Month()
 		termTimeTable.PreTimeTable = WinterTimeTable
 		termTimeTable.SufTimeTable = SummerTimeTable
 	}
-	sepTime = time.Date(startTime.Year(), sepTime.Month(), sepTime.Day(), 0, 0, 0, 0, zone)
+	sepTime := time.Date(sepYear, sepMonth, 1, 0, 0, 0, 0, zone)
 	sepWeeks := int(math.Ceil((sepTime.Sub(startTime).Hours())/(24*7))) + 1
 	termTimeTable.SepWeeks = sepWeeks
 	return termTimeTable

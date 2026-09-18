@@ -21,7 +21,7 @@ func TestRequestLoggingAndAdminAccess(t *testing.T) {
 
 	response := httptest.NewRecorder()
 	wrapped.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/login?username=secret", strings.NewReader("password=secret")))
-	entries := store.list(10, "error", "login", "202405190101")
+	entries := store.list(10, "error", "login", hashedAuditAccount("202405190101"))
 	if len(entries) != 1 {
 		t.Fatalf("entries = %d, want 1", len(entries))
 	}
@@ -31,7 +31,7 @@ func TestRequestLoggingAndAdminAccess(t *testing.T) {
 	if entries[0].Status != http.StatusBadGateway || entries[0].Message != "upstream login failed" {
 		t.Fatalf("unexpected entry: %#v", entries[0])
 	}
-	if entries[0].Event != "login" || entries[0].Account != "202405190101" {
+	if entries[0].Event != "login" || entries[0].Account != hashedAuditAccount("202405190101") || entries[0].Account == "202405190101" {
 		t.Fatalf("login audit fields missing: %#v", entries[0])
 	}
 
@@ -65,6 +65,13 @@ func TestAdminLogsRequiresToken(t *testing.T) {
 	handler.adminLogs(response, httptest.NewRequest(http.MethodGet, "/admin/logs", nil))
 	if response.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestDiagnosticAccountLoggingCanBeEnabled(t *testing.T) {
+	t.Setenv("LOG_ACCOUNT_IDS", "true")
+	if got := logAuditAccount("202405190101"); got != "202405190101" {
+		t.Fatalf("diagnostic account = %q", got)
 	}
 }
 

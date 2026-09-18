@@ -5,6 +5,7 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - ENV=prod
+      - LOG_ACCOUNT_IDS=${LOG_ACCOUNT_IDS:-true}
     volumes:
       - /etc/localtime:/etc/localtime:ro  # 设置时区
       - api-logs:/logs
@@ -19,6 +20,11 @@ services:
       - ACTIVITY_ADMIN_TOKEN=${ACTIVITY_ADMIN_TOKEN:?set ACTIVITY_ADMIN_TOKEN}
       - ACTIVITY_ADMIN_ORIGIN=${ACTIVITY_ADMIN_ORIGIN:-*}
       - ACTIVITY_DATA_DIR=/app/_data/activities
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4.1-flash}
+      - SESSION_VAULT_MASTER_KEY=${SESSION_VAULT_MASTER_KEY:-}
+      - LOG_ACCOUNT_IDS=${LOG_ACCOUNT_IDS:-true}
     volumes:
       - proxy_files:/app/_data
       - /etc/localtime:/etc/localtime:ro  # 设置时区
