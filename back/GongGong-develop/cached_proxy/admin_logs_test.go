@@ -35,9 +35,10 @@ func TestRequestLoggingAndAdminAccess(t *testing.T) {
 		t.Fatalf("login audit fields missing: %#v", entries[0])
 	}
 
-	handler := &activityHandler{requestLogs: store, adminToken: "test-token", adminOrigin: "*"}
+	accounts, token := testActivityAccounts(t)
+	handler := &activityHandler{requestLogs: store, accounts: accounts, adminOrigin: "*"}
 	adminRequest := httptest.NewRequest(http.MethodGet, "/admin/logs?level=error", nil)
-	adminRequest.Header.Set("Authorization", "Bearer test-token")
+	adminRequest.Header.Set("Authorization", "Bearer "+token)
 	adminResponse := httptest.NewRecorder()
 	handler.adminLogs(adminResponse, adminRequest)
 	if adminResponse.Code != http.StatusOK {
@@ -60,7 +61,8 @@ func TestAdminLogsRequiresToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := &activityHandler{requestLogs: store, adminToken: "test-token", adminOrigin: "*"}
+	accounts, _ := testActivityAccounts(t)
+	handler := &activityHandler{requestLogs: store, accounts: accounts, adminOrigin: "*"}
 	response := httptest.NewRecorder()
 	handler.adminLogs(response, httptest.NewRequest(http.MethodGet, "/admin/logs", nil))
 	if response.Code != http.StatusUnauthorized {

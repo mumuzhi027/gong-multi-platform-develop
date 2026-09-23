@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.di.LocalOverloadNavController
 import com.sky31.gongmultiplatform.ui.viewModel.DrawerViewModel
+import com.sky31.gongmultiplatform.ui.viewModel.ActivityViewModel
 import com.sky31.gongmultiplatform.util.TokenState
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.about
@@ -37,6 +38,7 @@ import gongmultiplatform.composeapp.generated.resources.gonggong_logo
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.koin.mp.KoinPlatform.getKoin
 
 /**
  * mainScreen左侧栏
@@ -49,6 +51,8 @@ fun MainScreenDrawer(
 ) {
     val overloadController = LocalOverloadNavController.current
     val viewModel: DrawerViewModel = viewModel { DrawerViewModel() }
+    val activityViewModel = getKoin().get<ActivityViewModel>()
+    val gongAiVisible by activityViewModel.gongAiVisible.collectAsState()
 
     val scope = rememberCoroutineScope()
 
@@ -57,6 +61,7 @@ fun MainScreenDrawer(
     LaunchedEffect(state.isOpen) {
         if(state.isOpen && !TokenState.isOfflineMode.value) {
             viewModel.update()
+            activityViewModel.refresh()
         }
     }
 
@@ -83,7 +88,7 @@ fun MainScreenDrawer(
                 userInfo = userInfo
             )
 
-            IconRow(
+            if (gongAiVisible) IconRow(
                 icon = Res.drawable.gonggong_logo,
                 text = "拱拱AI",
                 badge = "Beta",

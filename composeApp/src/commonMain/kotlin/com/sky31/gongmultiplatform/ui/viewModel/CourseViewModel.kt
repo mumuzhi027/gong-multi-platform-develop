@@ -44,6 +44,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
 
     private val _sheetCourse = MutableStateFlow<CourseElem?>(null)
     val sheetCourse = _sheetCourse.asStateFlow()
+    private var sheetWeek: Long = 0
 
     private val _sheetVisible = MutableStateFlow<Boolean>(false)
     val sheetVisible = _sheetVisible.asStateFlow()
@@ -175,8 +176,9 @@ class CourseViewModel: ViewModel(), KoinComponent {
         _sheetVisible.value = false
     }
 
-    fun setSheetCourse(course: CourseElem) {
+    fun setSheetCourse(course: CourseElem, week: Long) {
         _sheetCourse.value = course
+        sheetWeek = week
     }
 
     fun openEditor(day: String, week: Long, startTime: Int, course: CourseElem? = null) {
@@ -189,7 +191,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
         val editor = _editorState.value ?: return
         if (name.isBlank() || week < 1 || start !in 1..11 || end !in start..11) return
         viewModelScope.launch {
-            editor.course?.let { courseDataRepository.deleteCourse(it) }
+            editor.course?.let { courseDataRepository.deleteCourse(it, editor.week) }
             val map = courseDataRepository.getCourseMap().orEmpty().mapValues { it.value.toMutableList() }.toMutableMap()
             val list = map.getOrPut(editor.day) { mutableListOf() }
             list += CourseElem(name.trim(), teacher.trim(), classroom.trim(), week.toString(), start, end - start + 1, editor.day, true)
@@ -205,7 +207,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
         val editor = _editorState.value ?: return
         val course = editor.course ?: return
         viewModelScope.launch {
-            courseDataRepository.deleteCourse(course)
+            courseDataRepository.deleteCourse(course, editor.week)
             getCourseMapFromLocal()
             updateAppWidget()
             _editorState.value = null
@@ -215,11 +217,12 @@ class CourseViewModel: ViewModel(), KoinComponent {
     fun deleteSheetCourse() {
         val course = _sheetCourse.value ?: return
         viewModelScope.launch {
-            courseDataRepository.deleteCourse(course)
+            courseDataRepository.deleteCourse(course, sheetWeek)
             getCourseMapFromLocal()
             updateAppWidget()
             _sheetVisible.value = false
             _sheetCourse.value = null
+            sheetWeek = 0
         }
     }
 

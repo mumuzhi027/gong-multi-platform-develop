@@ -45,7 +45,7 @@ func (s *ServiceImpl) GetAccountByToken(token string) (Account, error) {
 }
 
 // newAccount 创建一个新的账户
-func (s *ServiceImpl) newAccount(username string, _ string) (Account, error) {
+func (s *ServiceImpl) newAccount(username string, password string) (Account, error) {
 	token, err := utils.GenerateUUID()
 	if err != nil {
 		log.Print(err)
@@ -53,7 +53,7 @@ func (s *ServiceImpl) newAccount(username string, _ string) (Account, error) {
 	}
 	account := &SimpleAccountImpl{
 		Username:    username,
-		Password:    "",
+		Password:    password,
 		StaticToken: token,
 		status:      Normal,
 		CreateTime:  time.Now(),

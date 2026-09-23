@@ -163,7 +163,7 @@ fun CourseColumnFragment(
                         .clickable {
                             if (course.isCustom) viewModel.openEditor(day, week, course.startTime, course)
                             else {
-                                viewModel.setSheetCourse(course)
+                                viewModel.setSheetCourse(course, week)
                                 viewModel.showSheet()
                             }
                         }

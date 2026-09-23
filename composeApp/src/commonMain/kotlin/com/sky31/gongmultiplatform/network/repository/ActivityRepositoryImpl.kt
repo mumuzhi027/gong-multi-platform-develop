@@ -1,6 +1,8 @@
 package com.sky31.gongmultiplatform.network.repository
 
 import com.sky31.gongmultiplatform.model.CampusActivity
+import com.sky31.gongmultiplatform.model.ActivityOrganizers
+import com.sky31.gongmultiplatform.model.PublicFeatures
 import com.sky31.gongmultiplatform.network.api.ActivityApiImpl
 import com.sky31.gongmultiplatform.util.NetworkResult
 import com.sky31.gongmultiplatform.util.safeApiCall
@@ -16,4 +18,10 @@ class ActivityRepositoryImpl(
 
     override suspend fun getActivityFilters(): NetworkResult<List<String>> =
         safeApiCall { api.getActivityFilters() }
+
+    override suspend fun getActivityOrganizers(): NetworkResult<ActivityOrganizers> =
+        safeApiCall { api.getActivityOrganizers() }
+
+    override suspend fun getPublicFeatures(): NetworkResult<PublicFeatures> =
+        safeApiCall { api.getPublicFeatures() }
 }

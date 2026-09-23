@@ -11,6 +11,7 @@ data class CampusActivity(
     val location: String,
     val startDate: String,
     val endDate: String,
+    val registrationDeadline: String = "",
     val posterTitle: String,
     val posterSubtitle: String,
     val posterUrl: String = "",
@@ -21,6 +22,15 @@ data class CampusActivity(
     val sortOrder: Int = 0,
     val filterTags: List<String> = emptyList()
 )
+
+@Serializable
+data class ActivityOrganizers(
+    val current: List<String> = emptyList(),
+    val past: List<String> = emptyList()
+)
+
+@Serializable
+data class PublicFeatures(val gongAiVisible: Boolean = false)
 
 val previewCampusActivities = listOf(
     CampusActivity(

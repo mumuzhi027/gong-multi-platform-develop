@@ -261,7 +261,13 @@ func (h *gongAIHandler) conversation(w http.ResponseWriter, r *http.Request) {
 
 func RegisterGongAIRoutes(mux *http.ServeMux) {
 	handler := newGongAIHandler()
-	mux.HandleFunc("/api/gong-ai/chat", handler.chat)
-	mux.HandleFunc("/api/gong-ai/actions/", handler.action)
-	mux.HandleFunc("/api/gong-ai/conversations/", handler.conversation)
+	onlyWhenEnabled := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if !readPublicFeatures().GongAIVisible { http.Error(w, "拱拱AI暂未开放", http.StatusServiceUnavailable); return }
+			next(w, r)
+		}
+	}
+	mux.HandleFunc("/api/gong-ai/chat", onlyWhenEnabled(handler.chat))
+	mux.HandleFunc("/api/gong-ai/actions/", onlyWhenEnabled(handler.action))
+	mux.HandleFunc("/api/gong-ai/conversations/", onlyWhenEnabled(handler.conversation))
 }

@@ -21,9 +21,8 @@ var (
 )
 
 var (
-	// Authentication state is intentionally process-local. Portal passwords must
-	// never be written to the proxy volume; a restart requires re-authentication.
-	AccountRepository = account.NewMemRepository()
+	// AccountRepository 是账户的数据仓库
+	AccountRepository = account.NewFileRepository("./_data")
 	// AccountService 是账户的服务
 	AccountService account.Service = account.NewServiceImpl(AccountRepository)
 )
@@ -33,9 +32,17 @@ func updateTask[V any](update func(*feign.Student) (*V, error)) func(string) (*V
 	return func(studentID string) (*V, bool) {
 		student, err := StudentService.GetStudent(studentID)
 		if err != nil {
-			// Student sessions are deliberately not reconstructed from persisted
-			// passwords. The user must authenticate again after a restart/expiry.
-			return nil, false
+			a, accountErr := AccountService.GetAccountByAccountID(studentID)
+			if accountErr != nil {
+				return nil, false
+			}
+			err = StudentService.SetStudent(a.AccountID(), a.GetPassword(), false)
+			// 设置后需要重新获取一次学生账户。
+			student, _ = StudentService.GetStudent(studentID)
+			if err != nil {
+				log.Printf("account %s is locked", logAuditAccount(studentID))
+				return nil, false
+			}
 		}
 		if student == nil {
 			return nil, false
@@ -110,7 +117,10 @@ var (
 	})
 	StudentCourseUpdater = updateTask[feign.CourseList](func(student *feign.Student) (*feign.CourseList, error) {
 		value, err := (*student).GetStudentCourses()
-		return value, err
+		if err != nil {
+			return nil, err
+		}
+		return feign.ExpandCourseWeeks(value), nil
 	})
 )
 

@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -65,6 +67,7 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
     val loading by viewModel.loading.collectAsState()
     val usingFallback by viewModel.usingFallback.collectAsState()
     val filters by viewModel.filters.collectAsState()
+    val organizers by viewModel.organizers.collectAsState()
     val today = currentActivityDate()
     val currentActivities = activities.filterNot { it.isPastActivity(today) }
     val pastActivities = activities
@@ -72,12 +75,52 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
         .sortedByDescending { it.endDate.replace('.', '-') }
     var selectedPeriod by remember { mutableStateOf(ActivityPeriod.Current) }
     var selectedFilter by remember { mutableStateOf<String?>(null) }
+    var selectedOrganizations by remember { mutableStateOf<Set<String>?>(null) }
+    var showOrganizationFilter by remember { mutableStateOf(false) }
+    val availableOrganizations = when (selectedPeriod) {
+        ActivityPeriod.Current -> organizers.current
+        ActivityPeriod.Past -> organizers.past
+    }
+    val filteredCurrentActivities = currentActivities.filter {
+        selectedOrganizations == null || it.organizer in selectedOrganizations.orEmpty()
+    }
     val periodActivities = when (selectedPeriod) {
         ActivityPeriod.Current -> currentActivities
         ActivityPeriod.Past -> pastActivities
     }
     val displayedActivities = periodActivities.filter { activity ->
-        selectedFilter == null || activity.filterTags.isEmpty() || selectedFilter in activity.filterTags
+        (selectedFilter == null || activity.filterTags.isEmpty() || selectedFilter in activity.filterTags) &&
+            (selectedOrganizations == null || activity.organizer in selectedOrganizations.orEmpty())
+    }
+
+    if (showOrganizationFilter) {
+        AlertDialog(
+            onDismissRequest = { showOrganizationFilter = false },
+            title = { Text("筛选组织 / 部门") },
+            text = {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = selectedOrganizations == null,
+                            onCheckedChange = { selectedOrganizations = null })
+                        Text("全部组织")
+                    }
+                    availableOrganizations.forEach { organization ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = selectedOrganizations == null || organization in selectedOrganizations.orEmpty(),
+                                onCheckedChange = { checked ->
+                                    val selection = selectedOrganizations ?: availableOrganizations.toSet()
+                                    selectedOrganizations = if (checked) selection + organization else selection - organization
+                                }
+                            )
+                            Text(organization)
+                        }
+                    }
+                    if (availableOrganizations.isEmpty()) Text("当前分类暂无可筛选的组织")
+                }
+            },
+            confirmButton = { TextButton(onClick = { showOrganizationFilter = false }) { Text("完成") } }
+        )
     }
 
     LazyColumn(
@@ -100,9 +143,9 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
                 )
-                if (currentActivities.isNotEmpty()) {
+                if (filteredCurrentActivities.isNotEmpty()) {
                     ActivityPosterCarousel(
-                        activities = currentActivities.take(3),
+                        activities = filteredCurrentActivities.take(3),
                         onActivityClick = { activity -> onActivityClick(activity.id) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -135,11 +178,11 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
                 TextButton(onClick = viewModel::refresh, enabled = !loading) {
                     Text(if (loading) "更新中…" else "刷新")
                 }
-                IconButton(onClick = { selectedFilter = null }) {
+                IconButton(onClick = { showOrganizationFilter = true }) {
                     Icon(
                         painter = painterResource(Res.drawable.filter_list),
                         contentDescription = "筛选活动",
-                        tint = if (selectedFilter == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                        tint = if (selectedOrganizations == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -148,7 +191,7 @@ fun ActivityScreen(onActivityClick: (String) -> Unit) {
         item {
             ActivityPeriodSwitcher(
                 selectedPeriod = selectedPeriod,
-                onPeriodSelected = { selectedPeriod = it }
+                onPeriodSelected = { selectedPeriod = it; selectedOrganizations = null }
             )
         }
 

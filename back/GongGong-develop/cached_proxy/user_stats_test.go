@@ -92,7 +92,8 @@ func TestAdminUserStatsRequiresAuthorization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := &activityHandler{userStats: store, adminToken: "test-token", adminOrigin: "*"}
+	accounts, _ := testActivityAccounts(t)
+	handler := &activityHandler{userStats: store, accounts: accounts, adminOrigin: "*"}
 	response := httptest.NewRecorder()
 	handler.adminUserStats(response, httptest.NewRequest(http.MethodGet, "/admin/user-stats", nil))
 	if response.Code != http.StatusUnauthorized {

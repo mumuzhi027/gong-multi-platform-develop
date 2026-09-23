@@ -3,6 +3,7 @@ package com.sky31.gongmultiplatform.ui.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sky31.gongmultiplatform.model.CampusActivity
+import com.sky31.gongmultiplatform.model.ActivityOrganizers
 import com.sky31.gongmultiplatform.model.previewCampusActivities
 import com.sky31.gongmultiplatform.network.repository.ActivityRepositoryImpl
 import com.sky31.gongmultiplatform.util.NetworkResult
@@ -27,6 +28,12 @@ class ActivityViewModel : ViewModel(), KoinComponent {
     private val _filters = MutableStateFlow<List<String>>(emptyList())
     val filters = _filters.asStateFlow()
 
+    private val _organizers = MutableStateFlow(ActivityOrganizers())
+    val organizers = _organizers.asStateFlow()
+
+    private val _gongAiVisible = MutableStateFlow(false)
+    val gongAiVisible = _gongAiVisible.asStateFlow()
+
     init {
         refresh()
     }
@@ -49,6 +56,14 @@ class ActivityViewModel : ViewModel(), KoinComponent {
             when (val result = repository.getActivityFilters()) {
                 is NetworkResult.Success -> _filters.value = result.data
                 is NetworkResult.Error -> Unit
+            }
+            when (val result = repository.getActivityOrganizers()) {
+                is NetworkResult.Success -> _organizers.value = result.data
+                is NetworkResult.Error -> Unit
+            }
+            when (val result = repository.getPublicFeatures()) {
+                is NetworkResult.Success -> _gongAiVisible.value = result.data.gongAiVisible
+                is NetworkResult.Error -> _gongAiVisible.value = false
             }
             _loading.value = false
         }

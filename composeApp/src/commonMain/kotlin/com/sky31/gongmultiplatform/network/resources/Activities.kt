@@ -7,3 +7,9 @@ class Activities(val limit: Int? = null)
 
 @Resource("/activity-filters")
 class ActivityFilters
+
+@Resource("/activity-organizers")
+class ActivityOrganizersResource
+
+@Resource("/public-features")
+class PublicFeaturesResource

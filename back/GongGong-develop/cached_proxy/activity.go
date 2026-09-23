@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/subtle"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -30,7 +29,10 @@ const (
 	maxActivityImages   = 9
 	maxImageDimension   = 4096
 	maxImagePixels      = 16_000_000
+	activityRevealDays  = 15
 )
+
+var errActivityForbidden = errors.New("activity belongs to another account")
 
 type Activity struct {
 	ID             string    `json:"id"`
@@ -40,6 +42,7 @@ type Activity struct {
 	Location       string    `json:"location"`
 	StartDate      string    `json:"startDate"`
 	EndDate        string    `json:"endDate"`
+	RegistrationDeadline string `json:"registrationDeadline,omitempty"`
 	PosterTitle    string    `json:"posterTitle"`
 	PosterSubtitle string    `json:"posterSubtitle"`
 	PosterURL      string    `json:"posterUrl"`
@@ -49,6 +52,7 @@ type Activity struct {
 	Published      bool      `json:"published"`
 	SortOrder      int       `json:"sortOrder"`
 	FilterTags     []string  `json:"filterTags"`
+	OwnerID        string    `json:"ownerId,omitempty"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -113,15 +117,13 @@ func (s *activityStore) list(includeUnpublished bool) []Activity {
 		}
 	}
 	sort.SliceStable(activities, func(i, j int) bool {
-		if activities[i].Featured != activities[j].Featured {
-			return activities[i].Featured
-		}
-		if activities[i].SortOrder != activities[j].SortOrder {
-			return activities[i].SortOrder < activities[j].SortOrder
-		}
-		if activities[i].StartDate != activities[j].StartDate {
-			return activities[i].StartDate < activities[j].StartDate
-		}
+		left, right := activities[i], activities[j]
+		if left.Featured != right.Featured { return left.Featured }
+		if left.SortOrder != right.SortOrder { return left.SortOrder < right.SortOrder }
+		leftDate, rightDate := left.RegistrationDeadline, right.RegistrationDeadline
+		if leftDate == "" { leftDate = left.StartDate }
+		if rightDate == "" { rightDate = right.StartDate }
+		if leftDate != rightDate { return leftDate < rightDate }
 		return activities[i].CreatedAt.Before(activities[j].CreatedAt)
 	})
 	return activities
@@ -143,7 +145,22 @@ func (s *activityStore) create(activity Activity) (Activity, error) {
 	return activity, nil
 }
 
-func (s *activityStore) update(id string, activity Activity) (Activity, error) {
+func (s *activityStore) get(id string) (Activity, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	a, ok := s.items[id]
+	return a, ok
+}
+
+func (s *activityStore) countOwned(owner string) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	count := 0
+	for _, activity := range s.items { if activity.OwnerID == owner { count++ } }
+	return count
+}
+
+func (s *activityStore) update(id string, activity Activity, actor activityAccount) (Activity, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -151,7 +168,10 @@ func (s *activityStore) update(id string, activity Activity) (Activity, error) {
 	if !ok {
 		return Activity{}, os.ErrNotExist
 	}
+	if !actor.Super && current.OwnerID != actor.ID { return Activity{}, errActivityForbidden }
 	activity.ID = id
+	activity.OwnerID = current.OwnerID
+	if !actor.Super { activity.Organizer = actor.Name; activity.Featured = current.Featured; activity.SortOrder = current.SortOrder }
 	activity.CreatedAt = current.CreatedAt
 	activity.UpdatedAt = time.Now().UTC()
 	s.items[id] = activity
@@ -162,7 +182,7 @@ func (s *activityStore) update(id string, activity Activity) (Activity, error) {
 	return activity, nil
 }
 
-func (s *activityStore) delete(id string) (bool, error) {
+func (s *activityStore) delete(id string, actor activityAccount) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -170,6 +190,7 @@ func (s *activityStore) delete(id string) (bool, error) {
 	if !ok {
 		return false, nil
 	}
+	if !actor.Super && current.OwnerID != actor.ID { return false, errActivityForbidden }
 	delete(s.items, id)
 	if err := s.writeLocked(); err != nil {
 		s.items[id] = current
@@ -210,9 +231,10 @@ func (s *activityStore) writeLocked() error {
 type activityHandler struct {
 	store       *activityStore
 	requestLogs *requestLogStore
+	operationLogs *requestLogStore
 	userStats   *userStatsStore
 	dataDir     string
-	adminToken  string
+	accounts    *activityAccountStore
 	adminOrigin string
 	filterPath  string
 	filterMu    sync.RWMutex
@@ -223,18 +245,30 @@ func RegisterActivityRoutes(mux *http.ServeMux, requestLogs *requestLogStore, us
 	if err != nil {
 		panic(err)
 	}
+	accounts, err := newActivityAccountStore(ActivityDataDir)
+	if err != nil { panic(err) }
+	operationLogs, err := newRequestLogStore(filepath.Join(ActivityDataDir, "operations"), defaultRequestLogCapacity)
+	if err != nil { panic(err) }
 	handler := &activityHandler{
 		store:       store,
 		requestLogs: requestLogs,
+		operationLogs: operationLogs,
 		userStats:   userStats,
 		dataDir:     ActivityDataDir,
-		adminToken:  os.Getenv("ACTIVITY_ADMIN_TOKEN"),
+		accounts:    accounts,
 		adminOrigin: ActivityAdminOrigin,
 		filterPath:  filepath.Join(ActivityDataDir, "activity-filters.json"),
 	}
 
 	mux.HandleFunc("/activities", handler.publicActivities)
+	mux.HandleFunc("/activity-organizers", handler.publicActivityOrganizers)
+	mux.HandleFunc("/public-features", handler.publicFeatures)
+	mux.HandleFunc("/admin/features", handler.withCORS(handler.adminFeatures))
 	mux.HandleFunc("/activity-filters", handler.publicActivityFilters)
+	mux.HandleFunc("/admin/session", handler.withCORS(handler.adminSession))
+	mux.HandleFunc("/admin/accounts", handler.withCORS(handler.adminAccounts))
+	mux.HandleFunc("/admin/accounts/", handler.withCORS(handler.adminAccount))
+	mux.HandleFunc("/admin/operation-logs", handler.withCORS(handler.adminOperationLogs))
 	mux.HandleFunc("/admin/activity-filters", handler.withCORS(handler.adminActivityFilters))
 	mux.HandleFunc("/admin/activities", handler.withCORS(handler.adminActivities))
 	mux.HandleFunc("/admin/activities/", handler.withCORS(handler.adminActivity))
@@ -301,9 +335,8 @@ func (h *activityHandler) adminActivityFilters(w http.ResponseWriter, r *http.Re
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	actor, ok := h.authorize(w, r)
+	if !ok { return }
 	switch r.Method {
 	case http.MethodGet:
 		filters, err := h.readActivityFilters()
@@ -313,6 +346,7 @@ func (h *activityHandler) adminActivityFilters(w http.ResponseWriter, r *http.Re
 		}
 		writeJSON(w, http.StatusOK, filters)
 	case http.MethodPut:
+		if !actor.Super { http.Error(w, "Forbidden", http.StatusForbidden); return }
 		r.Body = http.MaxBytesReader(w, r.Body, maxActivityBodySize)
 		var payload struct {
 			Filters []string `json:"filters"`
@@ -342,9 +376,9 @@ func (h *activityHandler) adminUserStats(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	actor, ok := h.authorize(w, r)
+	if !ok { return }
+	if !actor.Super { http.Error(w, "Forbidden", http.StatusForbidden); return }
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -367,9 +401,9 @@ func (h *activityHandler) adminLogs(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	actor, ok := h.authorize(w, r)
+	if !ok { return }
+	if !actor.Super { http.Error(w, "Forbidden", http.StatusForbidden); return }
 	if h.requestLogs == nil {
 		http.Error(w, "Request logs are not available", http.StatusServiceUnavailable)
 		return
@@ -396,7 +430,14 @@ func (h *activityHandler) publicActivities(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	activities := h.store.list(false)
+	allActivities := h.store.list(false)
+	activities := make([]Activity, 0, len(allActivities))
+	now := time.Now()
+	for _, activity := range allActivities {
+		if activityVisibleToPublic(activity, now) {
+			activities = append(activities, activity)
+		}
+	}
 	if limit, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && limit > 0 && limit < len(activities) {
 		activities = activities[:limit]
 	}
@@ -407,28 +448,49 @@ func (h *activityHandler) publicActivities(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// Published activities stay available to administrators immediately, but are
+// exposed to app clients only during the 15 days leading up to registration
+// close. Older records without a registration deadline use the activity start
+// date so they remain compatible with the new visibility rule.
+func activityVisibleToPublic(activity Activity, now time.Time) bool {
+	deadline := strings.TrimSpace(activity.RegistrationDeadline)
+	if deadline == "" { deadline = strings.TrimSpace(activity.StartDate) }
+	deadline = strings.ReplaceAll(deadline, ".", "-")
+	parsed, err := time.ParseInLocation("2006-01-02", deadline, now.Location())
+	if err != nil { return true }
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return !today.Before(parsed.AddDate(0, 0, -activityRevealDays))
+}
+
 func (h *activityHandler) adminActivities(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	actor, ok := h.authorize(w, r)
+	if !ok { return }
 
 	switch r.Method {
 	case http.MethodGet:
+		h.logAccountOperation("activity.read", actor, "全部活动")
 		writeJSON(w, http.StatusOK, h.store.list(true))
 	case http.MethodPost:
 		activity, ok := decodeActivity(w, r)
 		if !ok {
 			return
 		}
+		activity.OwnerID = actor.ID
+		if !actor.Super {
+			activity.Organizer = actor.Name
+			activity.Featured = false
+			activity.SortOrder = 0
+		}
 		created, err := h.store.create(activity)
 		if err != nil {
 			http.Error(w, "Unable to save activity", http.StatusInternalServerError)
 			return
 		}
+		h.logActivityOperation("activity.create", actor, created)
 		writeJSON(w, http.StatusCreated, created)
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -440,9 +502,8 @@ func (h *activityHandler) adminActivity(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	actor, ok := h.authorize(w, r)
+	if !ok { return }
 	id := strings.TrimPrefix(r.URL.Path, "/admin/activities/")
 	if id == "" || strings.Contains(id, "/") {
 		http.Error(w, "Invalid activity id", http.StatusBadRequest)
@@ -455,7 +516,8 @@ func (h *activityHandler) adminActivity(w http.ResponseWriter, r *http.Request) 
 		if !ok {
 			return
 		}
-		updated, err := h.store.update(id, activity)
+		updated, err := h.store.update(id, activity, actor)
+		if errors.Is(err, errActivityForbidden) { http.Error(w, "Forbidden", http.StatusForbidden); return }
 		if errors.Is(err, os.ErrNotExist) {
 			http.Error(w, "Activity not found", http.StatusNotFound)
 			return
@@ -464,9 +526,12 @@ func (h *activityHandler) adminActivity(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "Unable to save activity", http.StatusInternalServerError)
 			return
 		}
+		h.logActivityOperation("activity.update", actor, updated)
 		writeJSON(w, http.StatusOK, updated)
 	case http.MethodDelete:
-		deleted, err := h.store.delete(id)
+		current, _ := h.store.get(id)
+		deleted, err := h.store.delete(id, actor)
+		if errors.Is(err, errActivityForbidden) { http.Error(w, "Forbidden", http.StatusForbidden); return }
 		if err != nil {
 			http.Error(w, "Unable to delete activity", http.StatusInternalServerError)
 			return
@@ -475,6 +540,7 @@ func (h *activityHandler) adminActivity(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "Activity not found", http.StatusNotFound)
 			return
 		}
+		h.logActivityOperation("activity.delete", actor, current)
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -486,9 +552,7 @@ func (h *activityHandler) uploadPoster(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if !h.authorize(w, r) {
-		return
-	}
+	if _, ok := h.authorize(w, r); !ok { return }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -619,12 +683,17 @@ func decodeActivity(w http.ResponseWriter, r *http.Request) (Activity, bool) {
 	activity.Title = strings.TrimSpace(activity.Title)
 	activity.StartDate = strings.TrimSpace(activity.StartDate)
 	activity.EndDate = strings.TrimSpace(activity.EndDate)
+	activity.RegistrationDeadline = strings.TrimSpace(activity.RegistrationDeadline)
 	if activity.Title == "" || activity.StartDate == "" || activity.EndDate == "" {
 		http.Error(w, "title, startDate and endDate are required", http.StatusBadRequest)
 		return Activity{}, false
 	}
 	if activity.EndDate < activity.StartDate {
 		http.Error(w, "endDate cannot be earlier than startDate", http.StatusBadRequest)
+		return Activity{}, false
+	}
+	if activity.RegistrationDeadline != "" && len(activity.RegistrationDeadline) != 10 {
+		http.Error(w, "registrationDeadline must use YYYY-MM-DD", http.StatusBadRequest)
 		return Activity{}, false
 	}
 	if len(activity.Images) > maxActivityImages {
@@ -638,17 +707,12 @@ func decodeActivity(w http.ResponseWriter, r *http.Request) (Activity, bool) {
 	return activity, true
 }
 
-func (h *activityHandler) authorize(w http.ResponseWriter, r *http.Request) bool {
-	if h.adminToken == "" {
-		http.Error(w, "Activity admin token is not configured", http.StatusServiceUnavailable)
-		return false
+func (h *activityHandler) authorize(w http.ResponseWriter, r *http.Request) (activityAccount, bool) {
+	if h.accounts != nil {
+		if account, ok := h.accounts.authenticate(r); ok { return account, true }
 	}
-	provided := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if len(provided) != len(h.adminToken) || subtle.ConstantTimeCompare([]byte(provided), []byte(h.adminToken)) != 1 {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return false
-	}
-	return true
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	return activityAccount{}, false
 }
 
 func (h *activityHandler) withCORS(next http.HandlerFunc) http.HandlerFunc {

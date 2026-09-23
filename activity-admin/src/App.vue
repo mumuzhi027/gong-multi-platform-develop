@@ -9,6 +9,7 @@ const defaultForm = () => ({
   location: '',
   startDate: '',
   endDate: '',
+  registrationDeadline: '',
   posterTitle: '',
   posterSubtitle: '',
   posterUrl: '',
@@ -23,6 +24,15 @@ const defaultForm = () => ({
 const inferredApiBase = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `${window.location.origin}/api`
 const apiBase = ref(localStorage.getItem('gong_activity_api') || inferredApiBase)
 const adminToken = ref(sessionStorage.getItem('gong_activity_token') || '')
+const loginName = ref('')
+const loginPassword = ref('')
+const account = ref(null)
+const accounts = ref([])
+const accountDraft = reactive({ name: '', password: '' })
+const operationLogs = ref([])
+const publicFeatures = reactive({ gongAiVisible: false })
+const isSuper = computed(() => account.value?.super === true)
+const canManage = (activity) => isSuper.value || activity.ownerId === account.value?.id
 const activities = ref([])
 const activityFilters = ref([])
 const filterDraft = ref('')
@@ -196,16 +206,30 @@ async function connect() {
   loading.value = true
   try {
     localStorage.setItem('gong_activity_api', apiBase.value.replace(/\/$/, ''))
+    if (!adminToken.value) {
+      const response = await fetch(endpoint('/admin/session'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: loginName.value.trim(), password: loginPassword.value }),
+      })
+      if (!response.ok) throw new Error('账号或密码错误')
+      const session = await response.json()
+      adminToken.value = session.token
+      account.value = session.account
+      loginPassword.value = ''
+    } else {
+      account.value = await request('/admin/session')
+    }
     sessionStorage.setItem('gong_activity_token', adminToken.value)
     activities.value = await request('/admin/activities')
-    try {
-      activityFilters.value = await request('/admin/activity-filters')
-    } catch {
-      activityFilters.value = []
+    activityFilters.value = await request('/admin/activity-filters')
+    if (isSuper.value) {
+      Object.assign(publicFeatures, await request('/admin/features'))
     }
     connected.value = true
   } catch (reason) {
     connected.value = false
+    adminToken.value = ''
+    sessionStorage.removeItem('gong_activity_token')
     error.value = reason.message || '无法连接活动服务'
   } finally {
     loading.value = false
@@ -285,6 +309,51 @@ async function switchSection(section) {
   error.value = ''
   notice.value = ''
   if (section === 'logs') await Promise.all([loadLogs(), loadUserStats()])
+  if (section === 'operations') {
+    const result = await request('/admin/operation-logs')
+    operationLogs.value = result.items || []
+  }
+  if (section === 'accounts' && isSuper.value) accounts.value = await request('/admin/accounts')
+}
+
+async function saveAccount() {
+  error.value = ''
+  try {
+    await request('/admin/accounts', { method: 'POST', body: JSON.stringify(accountDraft) })
+    accountDraft.name = ''
+    accountDraft.password = ''
+    accounts.value = await request('/admin/accounts')
+    notice.value = '账号已创建'
+  } catch (reason) { error.value = reason.message }
+}
+
+async function changeAccountPassword(item) {
+  const password = window.prompt(`设置“${item.name}”的新密码（至少 10 位）`)
+  if (!password) return
+  try {
+    await request(`/admin/accounts/${encodeURIComponent(item.id)}`, {
+      method: 'PUT', body: JSON.stringify({ name: item.name, password }),
+    })
+    notice.value = '密码已更新，该账号需重新登录'
+  } catch (reason) { error.value = reason.message }
+}
+
+async function deleteAccount(item) {
+  if (!window.confirm(`删除账号“${item.name}”？请先处理其名下活动。`)) return
+  try {
+    await request(`/admin/accounts/${encodeURIComponent(item.id)}`, { method: 'DELETE' })
+    accounts.value = await request('/admin/accounts')
+    notice.value = '账号已删除'
+  } catch (reason) { error.value = reason.message }
+}
+
+async function saveFeatures() {
+  try {
+    Object.assign(publicFeatures, await request('/admin/features', {
+      method: 'PUT', body: JSON.stringify(publicFeatures),
+    }))
+    notice.value = '客户端功能开关已保存'
+  } catch (reason) { error.value = reason.message }
 }
 
 async function clearLogs() {
@@ -326,10 +395,12 @@ function logMessage(entry) {
 
 function openCreate() {
   Object.assign(form, defaultForm())
+  form.organizer = account.value?.name || ''
   editorOpen.value = true
 }
 
 function openEdit(activity) {
+  if (!canManage(activity)) return
   Object.assign(form, defaultForm(), activity)
   form.images = [...(activity.images || [])]
   form.filterTags = [...(activity.filterTags || [])]
@@ -345,6 +416,12 @@ async function saveActivity() {
     delete payload.id
     delete payload.createdAt
     delete payload.updatedAt
+    delete payload.ownerId
+    if (!isSuper.value) {
+      delete payload.featured
+      delete payload.sortOrder
+      payload.organizer = account.value.name
+    }
     if (form.id) {
       await request(`/admin/activities/${form.id}`, {
         method: 'PUT',
@@ -436,8 +513,10 @@ function removePoster() {
 }
 
 function signOut() {
+  if (adminToken.value) request('/admin/session', { method: 'DELETE' }).catch(() => {})
   sessionStorage.removeItem('gong_activity_token')
   adminToken.value = ''
+  account.value = null
   connected.value = false
   activities.value = []
   logs.value = []
@@ -458,18 +537,22 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
       <div class="brand-mark">拱</div>
       <p class="eyebrow">GONG ACTIVITY</p>
       <h1>活动管理台</h1>
-      <p class="login-copy">管理活动内容、展示顺序与首页推荐。</p>
+      <p class="login-copy">与合作组织一起发布和管理校园活动。</p>
 
       <label>
         <span>活动服务地址</span>
         <input v-model.trim="apiBase" placeholder="http://localhost:8000" />
       </label>
       <label>
-        <span>管理员令牌</span>
-        <input v-model="adminToken" type="password" placeholder="ACTIVITY_ADMIN_TOKEN" @keyup.enter="connect" />
+        <span>组织 / 部门账号</span>
+        <input v-model.trim="loginName" autocomplete="username" placeholder="例如：三翼" />
+      </label>
+      <label>
+        <span>密码</span>
+        <input v-model="loginPassword" type="password" autocomplete="current-password" @keyup.enter="connect" />
       </label>
       <p v-if="error" class="message error">{{ error }}</p>
-      <button class="primary wide" :disabled="loading || !apiBase || !adminToken" @click="connect">
+      <button class="primary wide" :disabled="loading || !apiBase || !loginName || !loginPassword" @click="connect">
         {{ loading ? '连接中…' : '进入管理台' }}
       </button>
     </section>
@@ -481,11 +564,13 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
         <div class="sidebar-brand"><span>拱</span> 活动管理</div>
         <nav>
           <button class="nav-link" :class="{ active: activeSection === 'activities' }" @click="switchSection('activities')">活动内容</button>
-          <button class="nav-link" :class="{ active: activeSection === 'logs' }" @click="switchSection('logs')">后端日志</button>
+          <button class="nav-link" :class="{ active: activeSection === 'operations' }" @click="switchSection('operations')">操作日志</button>
+          <button v-if="isSuper" class="nav-link" :class="{ active: activeSection === 'accounts' }" @click="switchSection('accounts')">账号管理</button>
+          <button v-if="isSuper" class="nav-link" :class="{ active: activeSection === 'logs' }" @click="switchSection('logs')">后端日志</button>
           <a :href="endpoint('/activities')" target="_blank">公开接口 ↗</a>
         </nav>
       </div>
-      <button class="text-button" @click="signOut">退出管理台</button>
+      <button class="text-button" @click="signOut">{{ account?.name }} · 退出</button>
     </aside>
 
     <main class="content">
@@ -508,12 +593,12 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
       <p v-if="error" class="message error">{{ error }}</p>
       <p v-if="notice" class="message success">{{ notice }}</p>
 
-      <section class="panel">
+      <section v-if="isSuper" class="panel filter-panel">
         <div class="panel-head">
           <div><h2>客户端筛选行</h2><span>这里的项目会显示在近期/往期下方；活动未选择项目时默认出现在全部筛选中。</span></div>
           <button class="secondary" @click="saveActivityFilters">保存筛选行</button>
         </div>
-        <div class="filter-editor">
+        <div class="filter-editor filter-panel-body">
           <span v-for="(item, index) in activityFilters" :key="item" class="tag published">
             {{ item }} <button type="button" class="tag-remove" @click="activityFilters.splice(index, 1)">×</button>
           </span>
@@ -555,15 +640,31 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
               <p class="date">{{ activity.startDate }} — {{ activity.endDate }} · {{ activityDurationLabel(activity) }}</p>
             </div>
             <div class="row-actions">
-              <button class="secondary" @click="openEdit(activity)">编辑</button>
-              <button class="danger" @click="deleteActivity(activity)">删除</button>
+              <button v-if="canManage(activity)" class="secondary" @click="openEdit(activity)">编辑</button>
+              <button v-if="canManage(activity)" class="danger" @click="deleteActivity(activity)">删除</button>
+              <span v-else class="muted">仅可查看</span>
             </div>
           </article>
         </div>
       </section>
       </template>
 
-      <template v-else>
+      <template v-else-if="activeSection === 'operations'">
+        <header class="topbar"><div><p class="eyebrow">AUDIT TRAIL</p><h1>操作日志</h1><p>记录账号创建、修改、删除活动及账号管理操作。</p></div><button class="secondary" @click="switchSection('operations')">刷新</button></header>
+        <p v-if="error" class="message error">{{ error }}</p>
+        <section class="panel section-panel operation-panel"><div v-if="!operationLogs.length" class="empty-state">暂无操作记录</div><div v-else class="operation-list"><article v-for="(entry, index) in operationLogs" :key="index" class="operation-row"><time>{{ formatLogTime(entry.timestamp) }}</time><strong>{{ entry.account }}</strong><span class="operation-event">{{ entry.event }}</span><span class="operation-message">{{ entry.message }}</span></article></div></section>
+      </template>
+
+      <template v-else-if="activeSection === 'accounts' && isSuper">
+        <header class="topbar"><div><p class="eyebrow">ACCOUNT CENTER</p><h1>组织账号</h1><p>普通账号只能管理自己发布的活动。</p></div></header>
+        <p v-if="error" class="message error">{{ error }}</p>
+        <p v-if="notice" class="message success">{{ notice }}</p>
+        <section class="panel section-panel account-panel"><div class="panel-head"><div><h2>新增组织 / 部门</h2><span>账号名称同时作为该组织默认主办方；密码至少 10 位。</span></div></div><div class="account-form"><input v-model.trim="accountDraft.name" autocomplete="off" placeholder="组织或部门名称" /><input v-model="accountDraft.password" type="password" autocomplete="new-password" placeholder="初始密码" /><button class="primary" :disabled="!accountDraft.name || accountDraft.password.length < 10" @click="saveAccount">创建账号</button></div></section>
+        <section class="panel section-panel account-panel"><div class="panel-head"><div><h2>全部账号</h2></div></div><div class="account-list"><div v-for="item in accounts" :key="item.id" class="account-row"><strong>{{ item.name }}</strong><span>{{ item.super ? '超级管理员' : '普通账号' }}</span><div class="account-actions"><button class="secondary" @click="changeAccountPassword(item)">重置密码</button><button v-if="!item.super" class="danger" @click="deleteAccount(item)">删除</button></div></div></div></section>
+        <section class="panel section-panel account-panel"><div class="panel-head"><div><h2>客户端功能开关</h2><span>拱拱 AI 默认关闭，准备好后再开启。</span></div></div><div class="feature-controls"><label class="switch-row"><input v-model="publicFeatures.gongAiVisible" type="checkbox" /><span>在 App 显示拱拱 AI</span></label><button class="primary" @click="saveFeatures">保存开关</button></div></section>
+      </template>
+
+      <template v-else-if="isSuper">
         <header class="topbar">
           <div>
             <p class="eyebrow">SERVICE OBSERVABILITY</p>
@@ -659,10 +760,11 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
 
         <div class="form-grid">
           <label class="full"><span>活动名称 *</span><input v-model.trim="form.title" required /></label>
-          <label><span>主办方</span><input v-model.trim="form.organizer" /></label>
+          <label><span>主办方</span><input v-model.trim="form.organizer" :readonly="!isSuper" /></label>
           <label><span>参与方式</span><input v-model.trim="form.participation" /></label>
           <label><span>活动地点</span><input v-model.trim="form.location" /></label>
-          <label><span>排序值</span><input v-model.number="form.sortOrder" type="number" /></label>
+          <label v-if="isSuper"><span>排序值（越小越靠前）</span><input v-model.number="form.sortOrder" type="number" /></label>
+          <label><span>报名截止日期（可选，默认按开始日期排序）</span><input v-model="form.registrationDeadline" type="date" /></label>
           <label><span>开始日期 *</span><input v-model="form.startDate" type="date" required /></label>
           <label><span>结束日期 *</span><input v-model="form.endDate" type="date" required /></label>
           <div class="full duration-hint">
@@ -720,7 +822,7 @@ onUnmounted(() => window.clearInterval(dateRefreshTimer))
           </div>
 
           <label class="switch-row"><input v-model="form.published" type="checkbox" /><span>发布到客户端</span></label>
-          <label class="switch-row"><input v-model="form.featured" type="checkbox" /><span>设为首页推荐</span></label>
+          <label v-if="isSuper" class="switch-row"><input v-model="form.featured" type="checkbox" /><span>设为首页推荐</span></label>
         </div>
 
         <div class="editor-actions">
