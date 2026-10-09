@@ -2,6 +2,7 @@ package com.sky31.gongmultiplatform.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.russhwolf.settings.Settings
 import com.sky31.gongmultiplatform.data.repository.CourseDataRepositoryImpl
 import com.sky31.gongmultiplatform.data.repository.PublicDataRepositoryImpl
 import com.sky31.gongmultiplatform.model.CalendarData
@@ -9,9 +10,14 @@ import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.network.repository.CourseRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.PublicRepositoryImpl
 import com.sky31.gongmultiplatform.util.DataState
+import com.sky31.gongmultiplatform.util.COURSE_TIME_GROUP_MASK
+import com.sky31.gongmultiplatform.util.MAX_COURSE_WEEK
 import com.sky31.gongmultiplatform.util.NetworkResult
 import com.sky31.gongmultiplatform.util.Toast
+import com.sky31.gongmultiplatform.util.TokenState
 import com.sky31.gongmultiplatform.util.codeToDataState
+import com.sky31.gongmultiplatform.util.createEncryptedSettings
+import com.sky31.gongmultiplatform.util.formatWeeksRange
 import com.sky31.gongmultiplatform.util.getWeekNum
 import com.sky31.gongmultiplatform.util.visibleCoursesForWeek
 import com.sky31.gongmultiplatform.util.safeApiCallsSequential
@@ -39,6 +45,38 @@ class CourseViewModel: ViewModel(), KoinComponent {
 
     private val publicDataRepository: PublicDataRepositoryImpl by inject()
     private val publicRepository: PublicRepositoryImpl by inject()
+
+    private val settingsFactory: Settings.Factory by inject()
+    private val timeAxisSettings: Settings by lazy {
+        createEncryptedSettings(settingsFactory, name = "course_time_axis")
+    }
+    // 同步读取本地设置，首次打开就显示上次选择，避免先闪回常规模式。
+    private val _staggeredTimeGroups = MutableStateFlow(runCatching {
+        timeAxisSettings.getInt("staggered_groups", defaultValue = 0)
+            .takeIf { it in 0..COURSE_TIME_GROUP_MASK } ?: 0
+    }.getOrElse {
+        println("Failed to read course time axis preference: ${it.message}")
+        0
+    })
+    val staggeredTimeGroups = _staggeredTimeGroups.asStateFlow()
+
+    fun toggleTimeGroup(group: Int) {
+        if (group !in 0..5) return
+        saveTimeGroups(_staggeredTimeGroups.value xor (1 shl group))
+    }
+
+    fun toggleAllTimes() {
+        saveTimeGroups(if (_staggeredTimeGroups.value == COURSE_TIME_GROUP_MASK) 0 else COURSE_TIME_GROUP_MASK)
+    }
+
+    private fun saveTimeGroups(groups: Int) {
+        val value = groups and COURSE_TIME_GROUP_MASK
+        _staggeredTimeGroups.value = value
+        // 点击时立即写入独立的本地偏好，离开页面不依赖协程或页面销毁回调。
+        runCatching { timeAxisSettings.putInt("staggered_groups", value) }.onFailure {
+            println("Failed to save course time axis preference: ${it.message}")
+        }
+    }
 
     private val _courseMap = MutableStateFlow(mapOf<String, List<CourseElem>>())
 
@@ -69,6 +107,9 @@ class CourseViewModel: ViewModel(), KoinComponent {
             getCalendarFromLocal()
             getCourseMapFromLocal()
             updateCurrentWeekNum()
+            if (!TokenState.isOfflineMode.value && (_calendar.value == null || _courseMap.value.isEmpty())) {
+                update()
+            }
         }
     }
 
@@ -111,6 +152,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
                 publicDataRepository.insertPublicData(calendar = result.data)
 
                 getCalendarFromLocal()
+                updateCurrentWeekNum()
 
                 return DataState.Newest
             }
@@ -187,14 +229,29 @@ class CourseViewModel: ViewModel(), KoinComponent {
 
     fun closeEditor() { _editorState.value = null }
 
-    fun saveCustomCourse(name: String, teacher: String, classroom: String, week: Long, start: Int, end: Int) {
+    fun saveCustomCourse(name: String, teacher: String, classroom: String, startWeek: Long, endWeek: Long, start: Int, end: Int) {
         val editor = _editorState.value ?: return
-        if (name.isBlank() || week < 1 || start !in 1..11 || end !in start..11) return
+        if (name.isBlank() ||
+            startWeek !in 1..MAX_COURSE_WEEK || endWeek !in startWeek..MAX_COURSE_WEEK ||
+            start !in 1..11 || end !in start..11
+        ) return
         viewModelScope.launch {
-            editor.course?.let { courseDataRepository.deleteCourse(it, editor.week) }
-            val map = courseDataRepository.getCourseMap().orEmpty().mapValues { it.value.toMutableList() }.toMutableMap()
+            val map = courseDataRepository.getCourseMap().orEmpty()
+                .mapValues { (_, courses) -> courses.toMutableList() }
+                .toMutableMap()
+            // 编辑已有课程时移除原课程的全部周次，避免多周次课程产生重复条目
+            editor.course?.let { origin -> map.values.forEach { it.remove(origin) } }
             val list = map.getOrPut(editor.day) { mutableListOf() }
-            list += CourseElem(name.trim(), teacher.trim(), classroom.trim(), week.toString(), start, end - start + 1, editor.day, true)
+            list += CourseElem(
+                name.trim(),
+                teacher.trim(),
+                classroom.trim(),
+                formatWeeksRange(startWeek, endWeek),
+                start,
+                end - start + 1,
+                editor.day,
+                true
+            )
             map[editor.day] = list.sortedBy { it.startTime }.toMutableList()
             courseDataRepository.updateCourseMap(map)
             getCourseMapFromLocal()
@@ -207,7 +264,12 @@ class CourseViewModel: ViewModel(), KoinComponent {
         val editor = _editorState.value ?: return
         val course = editor.course ?: return
         viewModelScope.launch {
-            courseDataRepository.deleteCourse(course, editor.week)
+            val map = courseDataRepository.getCourseMap().orEmpty()
+                .mapValues { (_, courses) -> courses.toMutableList() }
+                .toMutableMap()
+            // 自定义课程以整门课程为单位删除，避免多周次课程残留在其它周次
+            map.values.forEach { it.remove(course) }
+            courseDataRepository.updateCourseMap(map)
             getCourseMapFromLocal()
             updateAppWidget()
             _editorState.value = null

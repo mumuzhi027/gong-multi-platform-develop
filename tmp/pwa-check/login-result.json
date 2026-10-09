@@ -1,0 +1,47 @@
+{
+  "origin": "http://127.0.0.1:4173/",
+  "checks": [
+    {
+      "action": "tap",
+      "fields": [
+        "username",
+        "password"
+      ],
+      "credentialsPreserved": true,
+      "formEncoded": true,
+      "noStaleToken": true
+    },
+    {
+      "action": "tap",
+      "fields": [
+        "username",
+        "password"
+      ],
+      "credentialsPreserved": true,
+      "formEncoded": true,
+      "noStaleToken": true
+    },
+    {
+      "action": "enter",
+      "fields": [
+        "username",
+        "password"
+      ],
+      "credentialsPreserved": true,
+      "formEncoded": true,
+      "noStaleToken": true
+    },
+    {
+      "action": "autofill",
+      "fields": [
+        "username",
+        "password"
+      ],
+      "credentialsPreserved": true,
+      "formEncoded": true,
+      "noStaleToken": true
+    }
+  ],
+  "successNavigation": true,
+  "failures": []
+}

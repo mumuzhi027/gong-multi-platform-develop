@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/env'
+import { API_BASE_URL, NATIVE_API_BASE_URL } from '../config/env'
 
 export function normalizeActivityDate(value) {
   return String(value || '').trim().replace(/\./g, '-')
@@ -39,6 +39,16 @@ export function formatActivityRange(activity) {
 
 export function activityImageUrl(url) {
   if (!url) return ''
-  if (/^https?:\/\//i.test(url)) return url
-  return `${API_BASE_URL.replace(/\/$/, '')}/${String(url).replace(/^\/+/, '')}`
+  const value = String(url).trim()
+  if (!value) return ''
+  // #ifdef H5
+  // Existing poster records can contain absolute URLs for the HTTP app backend.
+  // Route those through the same HTTPS origin as the PWA as well.
+  const backendOrigin = (import.meta.env.VITE_BACKEND_PUBLIC_ORIGIN || NATIVE_API_BASE_URL).replace(/\/$/, '')
+  if (value.startsWith(`${backendOrigin}/`)) return `${API_BASE_URL}${value.slice(backendOrigin.length)}`
+  if (value.startsWith(`${API_BASE_URL}/`)) return value
+  // #endif
+  if (/^https?:\/\//i.test(value)) return value
+  if (value.startsWith('//')) return `https:${value}`
+  return `${API_BASE_URL.replace(/\/$/, '')}/${value.replace(/^\/+/, '')}`
 }

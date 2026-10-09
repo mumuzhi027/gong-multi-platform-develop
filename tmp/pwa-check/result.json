@@ -1,0 +1,816 @@
+{
+  "layout": {
+    "nav": {
+      "top": 777,
+      "bottom": 852,
+      "height": 75
+    },
+    "body": {
+      "top": 85,
+      "bottom": 777,
+      "height": 692
+    },
+    "exam": {
+      "top": 614.5,
+      "bottom": 777,
+      "height": 162.5
+    },
+    "height": 852,
+    "width": 393,
+    "scroll": 393
+  },
+  "safeAreaLayouts": [
+    {
+      "scenario": "no-home-indicator",
+      "page": "home",
+      "height": 852,
+      "nav": {
+        "top": 777,
+        "bottom": 852,
+        "height": 75
+      },
+      "itemBottom": 840,
+      "padding": 0,
+      "headTop": 0,
+      "contentBottom": 777
+    },
+    {
+      "scenario": "no-home-indicator",
+      "page": "classroom",
+      "height": 852,
+      "nav": {
+        "top": 777,
+        "bottom": 852,
+        "height": 75
+      },
+      "itemBottom": 840,
+      "padding": 0,
+      "headTop": 0.40625,
+      "contentBottom": 777
+    },
+    {
+      "scenario": "no-home-indicator",
+      "page": "academic",
+      "height": 852,
+      "nav": {
+        "top": 777,
+        "bottom": 852,
+        "height": 75
+      },
+      "itemBottom": 840,
+      "padding": 0,
+      "headTop": 9.5,
+      "contentBottom": 777
+    },
+    {
+      "scenario": "no-home-indicator",
+      "page": "activity",
+      "height": 852,
+      "nav": {
+        "top": 777,
+        "bottom": 852,
+        "height": 75
+      },
+      "itemBottom": 840,
+      "padding": 0,
+      "headTop": 8
+    },
+    {
+      "scenario": "iphone-portrait",
+      "page": "home",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 62,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-portrait",
+      "page": "classroom",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 62.40625,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-portrait",
+      "page": "academic",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 71.5,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-portrait",
+      "page": "activity",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 70
+    },
+    {
+      "scenario": "iphone-extra-toolbar",
+      "page": "home",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 62,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-extra-toolbar",
+      "page": "classroom",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 62.40625,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-extra-toolbar",
+      "page": "academic",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 71.5,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "iphone-extra-toolbar",
+      "page": "activity",
+      "height": 874,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 70
+    },
+    {
+      "scenario": "iphone-landscape",
+      "page": "home",
+      "height": 493,
+      "nav": {
+        "top": 306,
+        "bottom": 402,
+        "height": 96
+      },
+      "itemBottom": 369,
+      "padding": 21,
+      "headTop": 0,
+      "contentBottom": 306
+    },
+    {
+      "scenario": "iphone-landscape",
+      "page": "classroom",
+      "height": 493,
+      "nav": {
+        "top": 306,
+        "bottom": 402,
+        "height": 96
+      },
+      "itemBottom": 369,
+      "padding": 21,
+      "headTop": 0.40625,
+      "contentBottom": 306
+    },
+    {
+      "scenario": "iphone-landscape",
+      "page": "academic",
+      "height": 493,
+      "nav": {
+        "top": 306,
+        "bottom": 402,
+        "height": 96
+      },
+      "itemBottom": 369,
+      "padding": 21,
+      "headTop": 9.5,
+      "contentBottom": 306
+    },
+    {
+      "scenario": "iphone-landscape",
+      "page": "activity",
+      "height": 493,
+      "nav": {
+        "top": 306,
+        "bottom": 402,
+        "height": 96
+      },
+      "itemBottom": 369,
+      "padding": 21,
+      "headTop": 8
+    },
+    {
+      "scenario": "reported-ios27-viewport",
+      "page": "home",
+      "height": 812,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 78,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "reported-ios27-viewport",
+      "page": "classroom",
+      "height": 812,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 78.40625,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "reported-ios27-viewport",
+      "page": "academic",
+      "height": 812,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 87.5,
+      "contentBottom": 765
+    },
+    {
+      "scenario": "reported-ios27-viewport",
+      "page": "activity",
+      "height": 812,
+      "nav": {
+        "top": 765,
+        "bottom": 874,
+        "height": 109
+      },
+      "itemBottom": 828,
+      "padding": 34,
+      "headTop": 86
+    }
+  ],
+  "viewports": [
+    {
+      "width": 320,
+      "height": 568,
+      "page": {
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "bottom": 568,
+        "width": 320,
+        "height": 568
+      },
+      "logo": {
+        "left": 60,
+        "right": 260,
+        "top": 76,
+        "bottom": 180,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 48,
+        "right": 272,
+        "top": 196,
+        "bottom": 241,
+        "width": 224,
+        "height": 45
+      },
+      "button": {
+        "left": 75,
+        "right": 245,
+        "top": 367,
+        "bottom": 407,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 124,
+        "right": 196,
+        "top": 425,
+        "bottom": 449,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 320,
+        "top": 528,
+        "bottom": 548,
+        "width": 320,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 320
+    },
+    {
+      "width": 375,
+      "height": 667,
+      "page": {
+        "left": 0,
+        "right": 375,
+        "top": 0,
+        "bottom": 667,
+        "width": 375,
+        "height": 667
+      },
+      "logo": {
+        "left": 87.5,
+        "right": 287.5,
+        "top": 87.4375,
+        "bottom": 191.4375,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 56.25,
+        "right": 318.75,
+        "top": 216.828125,
+        "bottom": 261.828125,
+        "width": 262.5,
+        "height": 45
+      },
+      "button": {
+        "left": 102.5,
+        "right": 272.5,
+        "top": 395.578125,
+        "bottom": 435.578125,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 151.5,
+        "right": 223.5,
+        "top": 453.578125,
+        "bottom": 477.578125,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 375,
+        "top": 627,
+        "bottom": 647,
+        "width": 375,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 375
+    },
+    {
+      "width": 393,
+      "height": 852,
+      "page": {
+        "left": 0,
+        "right": 393,
+        "top": 0,
+        "bottom": 852,
+        "width": 393,
+        "height": 852
+      },
+      "logo": {
+        "left": 96.5,
+        "right": 296.5,
+        "top": 129.796875,
+        "bottom": 233.796875,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 58.953125,
+        "right": 334.046875,
+        "top": 273.796875,
+        "bottom": 318.796875,
+        "width": 275.09375,
+        "height": 45
+      },
+      "button": {
+        "left": 111.5,
+        "right": 281.5,
+        "top": 468.796875,
+        "bottom": 508.796875,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 160.5,
+        "right": 232.5,
+        "top": 526.796875,
+        "bottom": 550.796875,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 393,
+        "top": 812,
+        "bottom": 832,
+        "width": 393,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 393
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "page": {
+        "left": 0,
+        "right": 430,
+        "top": 0,
+        "bottom": 932,
+        "width": 430,
+        "height": 932
+      },
+      "logo": {
+        "left": 115,
+        "right": 315,
+        "top": 130,
+        "bottom": 234,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 64.5,
+        "right": 365.5,
+        "top": 274,
+        "bottom": 319,
+        "width": 301,
+        "height": 45
+      },
+      "button": {
+        "left": 130,
+        "right": 300,
+        "top": 469,
+        "bottom": 509,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 179,
+        "right": 251,
+        "top": 527,
+        "bottom": 551,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 430,
+        "top": 892,
+        "bottom": 912,
+        "width": 430,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 430
+    },
+    {
+      "width": 460,
+      "height": 820,
+      "page": {
+        "left": 0,
+        "right": 460,
+        "top": 0,
+        "bottom": 820,
+        "width": 460,
+        "height": 820
+      },
+      "logo": {
+        "left": 130,
+        "right": 330,
+        "top": 125,
+        "bottom": 229,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 69,
+        "right": 391,
+        "top": 269,
+        "bottom": 314,
+        "width": 322,
+        "height": 45
+      },
+      "button": {
+        "left": 145,
+        "right": 315,
+        "top": 464,
+        "bottom": 504,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 194,
+        "right": 266,
+        "top": 522,
+        "bottom": 546,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 460,
+        "top": 780,
+        "bottom": 800,
+        "width": 460,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 460
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "page": {
+        "left": 144,
+        "right": 624,
+        "top": 0,
+        "bottom": 1024,
+        "width": 480,
+        "height": 1024
+      },
+      "logo": {
+        "left": 284,
+        "right": 484,
+        "top": 130,
+        "bottom": 234,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 216,
+        "right": 552,
+        "top": 274,
+        "bottom": 319,
+        "width": 336,
+        "height": 45
+      },
+      "button": {
+        "left": 299,
+        "right": 469,
+        "top": 469,
+        "bottom": 509,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 348,
+        "right": 420,
+        "top": 527,
+        "bottom": 551,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 144,
+        "right": 624,
+        "top": 984,
+        "bottom": 1004,
+        "width": 480,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 768
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "page": {
+        "left": 400,
+        "right": 880,
+        "top": 0,
+        "bottom": 800,
+        "width": 480,
+        "height": 800
+      },
+      "logo": {
+        "left": 540,
+        "right": 740,
+        "top": 122,
+        "bottom": 226,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 472,
+        "right": 808,
+        "top": 266,
+        "bottom": 311,
+        "width": 336,
+        "height": 45
+      },
+      "button": {
+        "left": 555,
+        "right": 725,
+        "top": 461,
+        "bottom": 501,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 604,
+        "right": 676,
+        "top": 519,
+        "bottom": 543,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 400,
+        "right": 880,
+        "top": 760,
+        "bottom": 780,
+        "width": 480,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 1280
+    },
+    {
+      "width": 393,
+      "height": 400,
+      "page": {
+        "left": 0,
+        "right": 393,
+        "top": 0,
+        "bottom": 513,
+        "width": 393,
+        "height": 513
+      },
+      "logo": {
+        "left": 96.5,
+        "right": 296.5,
+        "top": 76,
+        "bottom": 180,
+        "width": 200,
+        "height": 104
+      },
+      "field": {
+        "left": 58.953125,
+        "right": 334.046875,
+        "top": 196,
+        "bottom": 241,
+        "width": 275.09375,
+        "height": 45
+      },
+      "button": {
+        "left": 111.5,
+        "right": 281.5,
+        "top": 367,
+        "bottom": 407,
+        "width": 170,
+        "height": 40
+      },
+      "offline": {
+        "left": 160.5,
+        "right": 232.5,
+        "top": 425,
+        "bottom": 449,
+        "width": 72,
+        "height": 24
+      },
+      "install": {
+        "left": 0,
+        "right": 393,
+        "top": 473,
+        "bottom": 493,
+        "width": 393,
+        "height": 20
+      },
+      "font": "16px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+      "scrollWidth": 393
+    }
+  ],
+  "notificationArtwork": {
+    "width": 300,
+    "height": 120,
+    "source": "http://127.0.0.1:4173/static/icons/notification_logo.svg",
+    "pixels": [
+      [
+        0,
+        0,
+        0,
+        255
+      ],
+      [
+        35,
+        35,
+        35,
+        255
+      ],
+      [
+        71,
+        71,
+        71,
+        255
+      ],
+      [
+        255,
+        210,
+        220,
+        255
+      ],
+      [
+        255,
+        255,
+        255,
+        255
+      ]
+    ]
+  },
+  "posterLayout": {
+    "width": 393,
+    "height": 852,
+    "scale": 1,
+    "viewportWidth": 393,
+    "page": {
+      "width": 393,
+      "height": 852,
+      "top": 0,
+      "bottom": 852
+    },
+    "nav": {
+      "width": 393,
+      "height": 75,
+      "top": 777,
+      "bottom": 852
+    },
+    "font": "20px",
+    "rpx": ""
+  },
+  "decodedAssets": 66,
+  "contentImageMetrics": [
+    {
+      "width": 349,
+      "height": 174,
+      "ratio": 2,
+      "background": "100% 100%"
+    },
+    {
+      "width": 349,
+      "height": 698,
+      "ratio": 0.5,
+      "background": "100% 100%"
+    }
+  ],
+  "offlinePages": 6,
+  "cachedFiles": 183,
+  "exceptions": []
+}

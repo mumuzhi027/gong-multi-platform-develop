@@ -71,8 +71,7 @@ fun CourseBoxTopBar(
         courseList.forEach {
             if (getCourseState(
                     currentTime,
-                    it.startTime,
-                    it.duration
+                    it
                 ) is CourseState.Before
             )
                 accomplishment += 1f

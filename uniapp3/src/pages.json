@@ -56,35 +56,43 @@
     {
       "path": "pages/settings/index",
       "style": {
-        "navigationBarTitleText": "设置"
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/settings/notification",
       "style": {
-        "navigationBarTitleText": "通知管理"
+        "navigationBarTitleText": "通知管理",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/settings/auth-service",
       "style": {
-        "navigationBarTitleText": "认证服务"
+        "navigationBarTitleText": "认证服务",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/about/index",
       "style": {
-        "navigationBarTitleText": "关于"
+        "navigationBarTitleText": "关于",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/clause/index",
       "style": {
-        "navigationBarTitleText": "条款"
+        "navigationBarTitleText": "条款",
+        "navigationStyle": "custom"
       }
     }
   ],
   "globalStyle": {
+    "rpxCalcMaxDeviceWidth": 0,
+    "rpxCalcBaseDeviceWidth": 375,
+    "maxWidth": 480,
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "拱拱",
     "navigationBarBackgroundColor": "#f1f1f1",

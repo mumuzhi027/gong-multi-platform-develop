@@ -1,4 +1,5 @@
 <script setup>
+import AppHeader from '../../components/AppHeader.vue'
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { WEB_BASE_URL } from '../../config/env'
@@ -53,7 +54,8 @@ function openOnline() {
 </script>
 
 <template>
-  <view class="page clause-page">
+  <AppHeader back :title="title"/>
+  <view class="page sub-page clause-page">
     <view class="clause-card card">
       <view class="clause-title">{{ fallbackContent[type]?.heading || title }}</view>
       <view class="update-time">更新日期：2026年7月25日</view>

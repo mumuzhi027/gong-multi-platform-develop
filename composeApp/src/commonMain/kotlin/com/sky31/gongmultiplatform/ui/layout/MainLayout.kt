@@ -29,7 +29,6 @@ import com.sky31.gongmultiplatform.ui.screen.classroomScreen.ClassroomScreen
 import com.sky31.gongmultiplatform.ui.screen.mainScreen.MainScreen
 import com.sky31.gongmultiplatform.ui.viewModel.SettingViewModel
 import com.sky31.gongmultiplatform.util.AppUpdateState
-import com.sky31.gongmultiplatform.util.DataState
 import com.sky31.gongmultiplatform.util.getAppUpdateState
 import kotlinx.coroutines.delay
 
@@ -132,8 +131,7 @@ private fun AutoUpdateHost() {
     LaunchedEffect(Unit) {
         delay(1200)
 
-        val result = settingViewModel.checkUpdate()
-        if (result !is DataState.Newest) return@LaunchedEffect
+        settingViewModel.checkUpdate()
 
         val latestUpdateData = settingViewModel.updateData.value ?: return@LaunchedEffect
         val latestUpdateState = getAppUpdateState(

@@ -31,33 +31,27 @@ data class CustomTime(
     val minute: Int
 )
 
-val summerStartTime = listOf(
-    CustomTime(8, 0),
-    CustomTime(8, 55),
-    CustomTime(10, 10),
-    CustomTime(11, 5),
-    CustomTime(14, 30),
-    CustomTime(15, 25),
-    CustomTime(16, 40),
-    CustomTime(17, 35),
-    CustomTime(19, 30),
-    CustomTime(20, 25),
-    CustomTime(21, 20),
+// 1–2、3–4、5–6、7–8、9–10 及第 11 节的六个时间轴查看分组。
+const val COURSE_TIME_GROUP_MASK = 0b111111
 
-    )
+// 具体课程按教室使用错峰时间；周课表默认常规作息，可手动切换查看。
+private val staggeredStartTime = listOf(
+    CustomTime(8, 10), CustomTime(9, 5), CustomTime(10, 30), CustomTime(11, 25),
+    CustomTime(14, 10), CustomTime(15, 5), CustomTime(16, 30), CustomTime(17, 25),
+    CustomTime(19, 15), CustomTime(20, 10), CustomTime(21, 5)
+)
 
-val winterStartTime = listOf(
-    CustomTime(8, 0),
-    CustomTime(8, 55),
-    CustomTime(10, 10),
-    CustomTime(11, 5),
-    CustomTime(14, 0),
-    CustomTime(14, 55),
-    CustomTime(16, 10),
-    CustomTime(17, 5),
-    CustomTime(19, 0),
-    CustomTime(19, 55),
-    CustomTime(20, 50),
+fun CourseElem.isStaggeredCourse(): Boolean {
+    val location = classroom.filterNot { it.isWhitespace() }
+    return location.contains("逸夫楼") || location.contains("信息科技大楼") ||
+        location.contains("信息科技楼")
+}
+
+// 试行表中的“其他教学区域”，不再按旧夏/冬季作息切换。
+private val regularStartTime = listOf(
+    CustomTime(8, 0), CustomTime(8, 55), CustomTime(10, 20), CustomTime(11, 15),
+    CustomTime(14, 0), CustomTime(14, 55), CustomTime(16, 20), CustomTime(17, 15),
+    CustomTime(19, 15), CustomTime(20, 10), CustomTime(21, 5)
 )
 
 val reverseWeekdayNameMap=  mapOf(
@@ -127,6 +121,43 @@ fun visibleCoursesForWeek(week: Long, courses: List<CourseElem>): List<CourseEle
     return visible.sortedBy { it.startTime }
 }
 
+/** 课程支持的最大周次，与本地存储中周次展开的范围保持一致。 */
+const val MAX_COURSE_WEEK = 60L
+
+/**
+ * 将周次表达式解析为起止周次，供自定义课程编辑弹窗回填。
+ * 非连续的表达式（例如 "5,6,8"）取最小值和最大值。
+ *
+ * @param weeks 周次表达式，例如 "5"、"5-10"、"5,6,8"
+ * @return 起止周次，无法解析时返回 null
+ */
+fun parseWeeksRange(weeks: String?): Pair<Long, Long>? {
+    val numbers = weeks.orEmpty()
+        .replace('，', ',')
+        .replace('、', ',')
+        .replace('；', ',')
+        .replace(';', ',')
+        .replace('～', '-')
+        .replace('~', '-')
+        .split(',')
+        .flatMap { part ->
+            Regex("\\d+").findAll(part).mapNotNull { it.value.toLongOrNull() }.toList()
+        }
+
+    if (numbers.isEmpty()) return null
+
+    return numbers.min() to numbers.max()
+}
+
+/**
+ * 将起止周次拼接为课程存储使用的周次表达式。
+ *
+ * @param startWeek 开始周次
+ * @param endWeek 结束周次
+ */
+fun formatWeeksRange(startWeek: Long, endWeek: Long): String =
+    if (startWeek >= endWeek) startWeek.toString() else "$startWeek-$endWeek"
+
 fun isInThisWeek(week: Long, course: CourseElem): Boolean {
     if (week < 1 || course.weeks.isBlank()) return false
 
@@ -175,20 +206,26 @@ fun CourseElem.isValidForSchedule(): Boolean =
  * @param duration 课程时长
  */
 fun getCourseState(currentTime: LocalDateTime, start: Int, duration: Int): CourseState {
-
-    val curr = currentTime.let { currentTime.hour * 60 + currentTime.minute }
-
-    val startTime = (if(isSummerTime(currentTime)) summerStartTime[start - 1] else winterStartTime[start - 1]).let { it.hour * 60 + it.minute }
-
-    if(startTime > curr)
-        return CourseState.After
-    if (startTime + duration * 45 + 15 * (duration - 1) < curr)
-        return CourseState.Before
-    return CourseState.During
+    return courseStateAt(currentTime, coursePeriodTimes(start, duration, getStartTime(currentTime)))
 }
 
 fun getCourseColor(state: CourseState): Color {
     return courseColor[state] ?: Color(0xFF7A7A7A)
+}
+
+/** 使用课程所在教学楼的实际时间判断今日课程进度。 */
+fun getCourseState(currentTime: LocalDateTime, course: CourseElem): CourseState {
+    return courseStateAt(currentTime, getCourseTime(course, currentTime))
+}
+
+private fun courseStateAt(currentTime: LocalDateTime, times: List<CustomTime>): CourseState {
+    val (start, end) = times
+    val currentMinutes = currentTime.hour * 60 + currentTime.minute
+    return when {
+        currentMinutes < start.hour * 60 + start.minute -> CourseState.After
+        currentMinutes > end.hour * 60 + end.minute -> CourseState.Before
+        else -> CourseState.During
+    }
 }
 
 /**
@@ -198,13 +235,17 @@ fun getCourseColor(state: CourseState): Color {
  * @param currentTime 当前时间
  */
 fun getCourseTime(course: CourseElem, currentTime: LocalDateTime): List<CustomTime> {
-    val startTime = (if(isSummerTime(currentTime)) summerStartTime[course.startTime - 1] else winterStartTime[course.startTime - 1])
-    val endTime = CustomTime(
-        hour = (startTime.hour + course.duration.let { it * 45 + (it - 1) * 10 + startTime.minute } / 60) % 24,
-        minute = (startTime.minute + course.duration.let { it * 45 + (it - 1) * 10 }) % 60
+    return coursePeriodTimes(
+        course.startTime, course.duration,
+        getStartTime(currentTime.date, staggered = course.isStaggeredCourse())
     )
+}
 
-    return listOf(startTime, endTime)
+private fun coursePeriodTimes(start: Int, duration: Int, starts: List<CustomTime>): List<CustomTime> {
+    // 两种作息都从最后一节的起点取结束时间，完整包含连堂课间的大休息。
+    val lastStart = starts[start + duration - 2]
+    val endMinutes = lastStart.hour * 60 + lastStart.minute + 45
+    return listOf(starts[start - 1], CustomTime(endMinutes / 60, endMinutes % 60))
 }
 
 /**
@@ -216,69 +257,13 @@ fun customTimeToString(customTime: CustomTime): String {
     return "${customTime.hour.let { if(it >= 10) it else "0${it}" } }:${customTime.minute.let { if(it >= 10) it else "0${it}" }}"
 }
 
-/**
- * 判断时间是否为夏令时
- *
- * @param dateTime 时间
- */
-fun isSummerTime(
-    dateTime: LocalDateTime
-): Boolean {
-    val month = dateTime.month.ordinal + 1
+/** 试行期间使用通知中的统一常规作息。 */
+fun getStartTime(dateTime: LocalDateTime): List<CustomTime> = getStartTime(dateTime.date)
 
-    return when(month) {
-        in 5..9 -> true
-        else -> false
-    }
-}
-
-/**
- * 判断时间是否为夏令时
- *
- * @param date 时间
- */
-fun isSummerTime(
-    date: LocalDate
-): Boolean {
-    val month = date.month.ordinal + 1
-
-    return when(month) {
-        in 5..9 -> true
-        else -> false
-    }
-}
-
-/**
- * 获取开始时间为夏令时还是冬令时并返回
- *
- * @param dateTime 时间
- */
-fun getStartTime(dateTime: LocalDateTime): List<CustomTime> {
-    if(isSummerTime(dateTime)) {
-        println("summer")
-        return summerStartTime
-    }
-    else {
-        println("winter")
-        return winterStartTime
-    }
-}
-
-/**
- * 获取开始时间为夏令时还是冬令时并返回
- *
- * @param date 时间
- */
-fun getStartTime(date: LocalDate): List<CustomTime> {
-    if(isSummerTime(date)) {
-        println("summer")
-        return summerStartTime
-    }
-    else {
-        println("winter")
-        return winterStartTime
-    }
-}
+/** 保留日期参数供调用方使用；当前试行表不区分季节。 */
+@Suppress("UNUSED_PARAMETER")
+fun getStartTime(date: LocalDate, staggered: Boolean = false): List<CustomTime> =
+    if (staggered) staggeredStartTime else regularStartTime
 
 fun toWeekdayNameCN(index: Int): String {
     if(index < 1 || index > 7) {

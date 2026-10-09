@@ -1,4 +1,5 @@
 page {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --primary: #85cdfa;
   --primary-strong: #49b7f6;
   --background: #f1f1f1;
@@ -7,11 +8,29 @@ page {
   --text: #171717;
   --muted: #686868;
   --line: rgba(0, 0, 0, 0.08);
+  --course-flow-track: #d5deed;
+  --course-flow-start: #004fff;
+  --course-flow-middle: #d50079;
+  --course-flow-separator: #ffffff;
   min-height: 100%;
   color: var(--text);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  // Android WebView may enlarge text again when the system font size is high.
+  // All sizes in this project are already responsive through rpx, so disable
+  // that extra scaling to keep text and fixed UI regions in sync.
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  page {
+    --course-flow-track: #243548;
+    --course-flow-start: #5ae8ff;
+    --course-flow-middle: #ffc36b;
+    --course-flow-separator: #101820;
+  }
 }
 
 view,
@@ -20,6 +39,8 @@ scroll-view,
 button,
 input {
   box-sizing: border-box;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 button::after {
@@ -37,7 +58,7 @@ button::after {
 
 .page-with-nav {
   min-height: 100vh;
-  padding-bottom: calc(146rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(146rpx + var(--safe-area-bottom));
 }
 
 .card {
@@ -66,3 +87,94 @@ button::after {
   color: var(--muted);
   font-size: 28rpx;
 }
+
+/* #ifdef H5 */
+html,
+body {
+  margin: 0;
+  background: #f1f1f1;
+  overscroll-behavior-y: none;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+page {
+  --status-bar-height: env(safe-area-inset-top, 0px);
+  --app-height: 100vh;
+  --nav-height: calc(150rpx + var(--safe-area-bottom));
+  --text: #000000;
+  --muted: #515151;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (height: 100dvh) {
+  page { --app-height: 100dvh; }
+}
+
+// Some iOS standalone releases include absent Safari controls in this inset
+// (WebKit #301172). Keep the home-indicator space, without that extra toolbar.
+// Zero insets on older devices and 21px landscape insets remain unchanged.
+html[data-ios-standalone] uni-page-body {
+  --safe-area-bottom: min(env(safe-area-inset-bottom, 0px), 34px);
+  // dvh/visualViewport can omit the top inset in an installed WebKit app.
+  // Prefer vh there, and recover a measured inset-sized deficit when necessary.
+  --app-height: var(--ios-app-height, 100vh);
+  --status-bar-height: calc(env(safe-area-inset-top, 0px) + var(--ios-top-edge-clearance, 0px));
+}
+
+// Keep the main-page footer in the page's containing block. WebKit can place
+// viewport-fixed bars above the visible bottom of an installed app.
+html[data-ios-standalone] .page-with-nav { position: relative; }
+html[data-ios-standalone] .page-with-nav > .app-nav {
+  position: absolute;
+  right: 0;
+  left: 0;
+}
+html[data-ios-standalone] .activity-page {
+  height: var(--app-height);
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-ios-standalone] .activity-content {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+// A real opaque edge element gives WebKit an unambiguous status-bar color.
+// This is a compatibility attempt; system compositor blur needs device QA.
+.pwa-status-background {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: max(1px, calc(env(safe-area-inset-top, 0px) + var(--ios-top-edge-clearance, 0px)));
+  background: #f1f1f1;
+  pointer-events: none;
+}
+
+.page-with-nav { padding-bottom: var(--nav-height); }
+.page { min-height: var(--app-height); }
+.sub-page { min-height: calc(var(--app-height) - var(--status-bar-height) - 120rpx); }
+uni-page-body { min-height: var(--app-height); }
+
+// Keep Safari's focus zoom from changing the app viewport when entering credentials.
+uni-input input,
+uni-textarea textarea {
+  font-family: inherit;
+  font-size: max(16px, 1em);
+}
+uni-input .uni-input-placeholder { font-family: inherit; }
+
+// Fixed overlays follow the centered app viewport on desktop and tablet.
+.sheet-host,
+.editor-mask,
+.auth-dialog-host,
+.auth-dialog-mask,
+.help-mask {
+  left: var(--window-left, 0px);
+  right: var(--window-right, 0px);
+}
+.auth-dialog { max-width: 384px; }
+/* #endif */

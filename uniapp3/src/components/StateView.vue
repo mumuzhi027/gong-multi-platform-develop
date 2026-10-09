@@ -14,12 +14,12 @@ const emit = defineEmits(['retry'])
     <text>正在加载</text>
   </view>
   <view v-else-if="error" class="state">
-    <image class="state-image" src="/static/icons/error.png" mode="aspectFit" />
+    <image class="state-image" src="/static/icons/error.svg" mode="aspectFit" />
     <text>{{ error }}</text>
     <button class="retry" @tap="emit('retry')">重新加载</button>
   </view>
   <view v-else-if="empty" class="state">
-    <image class="state-image" src="/static/icons/course-active.png" mode="aspectFit" />
+    <image class="state-image" src="/static/icons/course-active.svg" mode="aspectFit" />
     <text>{{ emptyText }}</text>
   </view>
   <slot v-else />

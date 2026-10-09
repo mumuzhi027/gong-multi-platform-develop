@@ -81,7 +81,9 @@ fun SettingScreen(
 
         when (result) {
             is DataState.Newest -> {
-                when (appUpdateState) {
+                val latest = settingViewModel.updateData.value
+                when (latest?.let { getAppUpdateState(platformInfo.getVersionName(),
+                    it.lastVersion, it.leastVersion) }) {
                     AppUpdateState.UP_TO_DATE -> Toast.show("当前为最新版本")
                     AppUpdateState.OPTIONAL_UPDATE,
                     AppUpdateState.REQUIRED_UPDATE -> dialogState.show()
@@ -89,7 +91,13 @@ fun SettingScreen(
                 }
             }
 
-            is DataState.Error -> Toast.show(result.message)
+            is DataState.Error -> {
+                val cached = settingViewModel.updateData.value
+                if (cached != null && getAppUpdateState(platformInfo.getVersionName(),
+                        cached.lastVersion, cached.leastVersion) != AppUpdateState.UP_TO_DATE) {
+                    dialogState.show()
+                } else Toast.show(result.message)
+            }
             else -> Unit
         }
     }

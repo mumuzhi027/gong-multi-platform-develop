@@ -1,0 +1,69 @@
+{
+  "revision": "20261009-ios3",
+  "activeWorker": "88802ecaaabfe198",
+  "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 Version/27.0 Mobile/15E148 Safari/604.1",
+  "standalone": true,
+  "statusBarStyle": "default",
+  "safeArea": {
+    "top": "62px",
+    "bottom": "34px",
+    "fixedProbe": {
+      "top": 777,
+      "bottom": 874,
+      "left": 0,
+      "right": 1,
+      "width": 1,
+      "height": 97
+    }
+  },
+  "mainLayout": {
+    "page": "page page-with-nav home-page has-exams",
+    "viewport": {
+      "width": 402,
+      "height": 874,
+      "screenWidth": 402,
+      "screenHeight": 874
+    },
+    "visualViewport": {
+      "height": 874,
+      "width": 402,
+      "offsetTop": 0,
+      "scale": 1
+    },
+    "nav": {
+      "top": 765,
+      "bottom": 874,
+      "left": 0,
+      "right": 402,
+      "width": 402,
+      "height": 109
+    },
+    "pageRect": {
+      "top": 0,
+      "bottom": 874,
+      "left": 0,
+      "right": 402,
+      "width": 402,
+      "height": 874
+    },
+    "navPosition": "absolute",
+    "navPadding": "34px",
+    "iosStandalone": true,
+    "statusBarInset": "calc(62px + 0px)",
+    "viewportRecovery": {
+      "metrics": {
+        "top": 62,
+        "bottom": 34,
+        "vh": 874,
+        "dvh": 874,
+        "lvh": 874,
+        "screenHeight": 874,
+        "screenWidth": 402,
+        "viewportWidth": 402,
+        "visualHeight": 874,
+        "scale": 1
+      },
+      "correction": null
+    }
+  }
+}

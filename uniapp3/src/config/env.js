@@ -1,5 +1,12 @@
-export const API_BASE_URL = 'http://101.43.27.78:8000'
-export const WEB_BASE_URL = 'http://101.43.27.78:8000'
+export const NATIVE_API_BASE_URL = 'http://101.43.27.78:8000'
+let apiBaseUrl = NATIVE_API_BASE_URL
+let webBaseUrl = `${NATIVE_API_BASE_URL}/`
+// #ifdef H5
+apiBaseUrl = (import.meta.env.VITE_H5_API_BASE_URL || '/api').replace(/\/$/, '')
+webBaseUrl = `${(import.meta.env.VITE_H5_WEB_BASE_URL || '/web').replace(/\/$/, '')}/`
+// #endif
+export const API_BASE_URL = apiBaseUrl
+export const WEB_BASE_URL = webBaseUrl
 export const APP_VERSION = '1.0.0'
 export const WECHAT_SUBSCRIBE_TEMPLATE_IDS = []
 

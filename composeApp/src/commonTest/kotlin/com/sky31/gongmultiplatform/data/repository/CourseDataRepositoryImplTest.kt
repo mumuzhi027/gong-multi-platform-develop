@@ -3,6 +3,7 @@ package com.sky31.gongmultiplatform.data.repository
 import com.sky31.gongmultiplatform.data.local.dao.CourseDao
 import com.sky31.gongmultiplatform.data.local.domain.CourseEntity
 import com.sky31.gongmultiplatform.model.CourseElem
+import com.sky31.gongmultiplatform.util.formatWeeksRange
 import com.sky31.gongmultiplatform.util.isInThisWeek
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -85,6 +86,70 @@ class CourseDataRepositoryImplTest {
         assertTrue(courses.any { !it.isCustom && isInThisWeek(4, it) })
         assertFalse(courses.any { it.isCustom })
     }
+
+    @Test
+    fun customCourseSavedWithWeekRangeIsVisibleInEveryWeekOfTheRange() = runTest {
+        val repository = CourseDataRepositoryImpl(FakeCourseDao())
+
+        repository.updateCourseMap(mapOf("Monday" to listOf(customCourse(weeks = formatWeeksRange(5, 10)))))
+
+        val course = repository.getCourseMap().orEmpty().getValue("Monday").single()
+        assertTrue(isInThisWeek(5, course))
+        assertTrue(isInThisWeek(7, course))
+        assertTrue(isInThisWeek(10, course))
+        assertFalse(isInThisWeek(4, course))
+        assertFalse(isInThisWeek(11, course))
+    }
+
+    @Test
+    fun editingCustomCourseReplacesTheWholeOldWeekRange() = runTest {
+        val repository = CourseDataRepositoryImpl(FakeCourseDao())
+        val original = customCourse(weeks = formatWeeksRange(5, 10))
+        repository.updateCourseMap(mapOf("Monday" to listOf(original)))
+
+        // 与 CourseViewModel.saveCustomCourse 一致：先移除原课程的全部周次，再写入新课程
+        val visible = repository.getCourseMap().orEmpty()
+            .mapValues { (_, courses) -> courses.toMutableList() }
+            .toMutableMap()
+        visible.values.forEach { it.remove(original) }
+        visible["Monday"] = (visible.getValue("Monday") + customCourse(weeks = formatWeeksRange(5, 6)))
+            .sortedBy { it.startTime }
+            .toMutableList()
+        repository.updateCourseMap(visible)
+
+        val courses = repository.getCourseMap().orEmpty().getValue("Monday")
+        assertTrue(courses.any { isInThisWeek(5, it) })
+        assertTrue(courses.any { isInThisWeek(6, it) })
+        assertFalse(courses.any { isInThisWeek(7, it) })
+        assertFalse(courses.any { isInThisWeek(10, it) })
+    }
+
+    @Test
+    fun deletingCustomCourseRemovesEveryWeekOfTheRange() = runTest {
+        val repository = CourseDataRepositoryImpl(FakeCourseDao())
+        val course = customCourse(weeks = formatWeeksRange(5, 10))
+        repository.updateCourseMap(mapOf("Monday" to listOf(course)))
+
+        // 与 CourseViewModel.deleteCourse 一致：以整门课程为单位删除
+        val visible = repository.getCourseMap().orEmpty()
+            .mapValues { (_, courses) -> courses.toMutableList() }
+            .toMutableMap()
+        visible.values.forEach { it.remove(course) }
+        repository.updateCourseMap(visible)
+
+        assertTrue(repository.getCourseMap().orEmpty().getValue("Monday").isEmpty())
+    }
+
+    private fun customCourse(weeks: String) = CourseElem(
+        name = "自习",
+        teacher = "测试教师",
+        classroom = "测试教室",
+        weeks = weeks,
+        startTime = 1,
+        duration = 2,
+        day = "Monday",
+        isCustom = true
+    )
 
     private fun remoteCourse() = CourseElem(
         name = "测试课程",

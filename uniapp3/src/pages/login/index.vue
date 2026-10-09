@@ -2,10 +2,16 @@
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useAuthStore } from '../../stores/auth'
+import { currentInputValue } from '../../utils/input-value'
+// #ifdef H5
+import { installPwa, pwaState } from '../../pwa/client'
+// #endif
 
 const auth = useAuthStore()
 const username = ref('')
 const password = ref('')
+const usernameField = ref(null)
+const passwordField = ref(null)
 const passwordVisible = ref(false)
 const error = ref('')
 const helpVisible = ref(false)
@@ -16,7 +22,14 @@ onLoad(() => {
   if (auth.authenticated) uni.reLaunch({ url: '/pages/home/index' })
 })
 
-async function submit() {
+function syncFields() {
+  username.value = currentInputValue(usernameField.value, username.value)
+  password.value = currentInputValue(passwordField.value, password.value)
+}
+
+async function submit(event) {
+  syncFields()
+  if (event?.type === 'confirm' && typeof event.detail?.value === 'string') password.value = event.detail.value
   if (!canSubmit.value || auth.loading) return
   error.value = ''
   try {
@@ -56,15 +69,18 @@ function copyPortalUrl() {
     <view class="form">
       <view class="input-wrap">
         <input
+          ref="usernameField"
           v-model="username"
           class="input"
           placeholder="用户名"
           placeholder-class="placeholder"
           confirm-type="next"
+          @blur="syncFields"
         />
       </view>
       <view class="input-wrap">
         <input
+          ref="passwordField"
           v-model="password"
           class="input"
           placeholder="密码"
@@ -72,10 +88,11 @@ function copyPortalUrl() {
           :password="!passwordVisible"
           confirm-type="done"
           @confirm="submit"
+          @blur="syncFields"
         />
         <view class="eye" @tap="passwordVisible = !passwordVisible">
           <image
-            :src="passwordVisible ? '/static/icons/password_visible.png' : '/static/icons/password_invisible.png'"
+            :src="passwordVisible ? '/static/icons/password_visible.svg' : '/static/icons/password_invisible.svg'"
             mode="aspectFit"
           />
         </view>
@@ -94,6 +111,9 @@ function copyPortalUrl() {
       登录
     </button>
     <view class="offline" @tap="enterOffline">离线模式</view>
+    <!-- #ifdef H5 -->
+    <view v-if="!pwaState.installed" class="install-entry" @tap="installPwa">添加到主屏幕</view>
+    <!-- #endif -->
 
     <view v-if="helpVisible" class="help-mask" @tap="helpVisible = false" @touchmove.stop>
       <view class="help-dialog" @tap.stop>
@@ -292,4 +312,34 @@ function copyPortalUrl() {
   from { opacity: 0; transform: translateY(-20rpx); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* #ifdef H5 */
+.login-page {
+  position: relative;
+  // Native LoginScreen uses dp for controls and 70% only for the form width.
+  // Compress whitespace on short screens while preserving readable controls.
+  --login-top: clamp(20px, calc((var(--app-height) - var(--status-bar-height) - 520px) * .15), 50px);
+  --login-gap: clamp(16px, calc((var(--app-height) - var(--status-bar-height) - 540px) * .2), 40px);
+  --login-submit-gap: clamp(24px, calc((var(--app-height) - var(--status-bar-height) - 540px) * .25), 48px);
+  padding-top: calc(var(--status-bar-height) + var(--login-top));
+  padding-bottom: calc(64px + var(--safe-area-bottom));
+}
+.alert-wrap { height: 40px; margin-top: 0; flex-shrink: 0; }
+.brand { margin-top: var(--login-gap); margin-bottom: var(--login-gap); flex-shrink: 0; }
+.login-logo { width: 200px; }
+.form { width: 70%; }
+.input-wrap { height: 45px; margin-bottom: 15px; padding: 0 15px; border-width: 1px; border-radius: 30px; }
+.input { min-width: 0; height: 43px; font-size: 16px; }
+.input-wrap:last-child { margin-bottom: 0; }
+.placeholder { color: var(--muted); }
+.eye { width: 30px; flex-shrink: 0; }
+.eye image { width: 16px; height: 16px; opacity: 1; }
+.help-entry { margin-top: 22px; color: var(--primary); font-size: 14px; line-height: 20px; font-weight: 500; }
+.login-button { width: 170px; height: 40px; min-height: 40px; margin-top: var(--login-submit-gap); padding: 0; line-height: 40px; color: #000; font-size: 14px; flex-shrink: 0; }
+.offline { margin-top: 18px; color: var(--primary); font-size: 18px; line-height: 24px; }
+.install-entry { position: absolute; right: 0; bottom: calc(20px + var(--safe-area-bottom)); left: 0; margin: 0; color: var(--muted); font-size: 13px; line-height: 20px; text-align: center; }
+.help-mask { left: var(--window-left, 0px); right: var(--window-right, 0px); padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + var(--safe-area-bottom)); }
+.help-dialog { max-height: 100%; }
+.help-content { height: min(360px, 48dvh); }
+/* #endif */
 </style>

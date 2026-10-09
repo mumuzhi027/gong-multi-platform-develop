@@ -26,6 +26,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.ui.theme.CourseColor
 import com.sky31.gongmultiplatform.ui.viewModel.CourseViewModel
+import com.sky31.gongmultiplatform.util.isStaggeredCourse
+import com.sky31.gongmultiplatform.ui.component.staggeredCourseBorder
 
 fun generateCourseColor(courseName: String): Color {
     val colors = CourseColor.entries.toTypedArray()
@@ -112,7 +114,9 @@ fun CourseColumnFragment(
             .filter { course -> course.startTime in start..end }
             .forEach { course ->
                 if (course.startTime < index) return@forEach
+                val isStaggered = course.isStaggeredCourse()
                 val courseColor = generateCourseColor(course.name)
+                val textColor = MaterialTheme.colorScheme.onSurface
                 val longestTextLength = maxOf(course.name.length, course.classroom.length)
                 val nameFontSize = when {
                     course.duration >= 3 -> 12.sp
@@ -129,14 +133,14 @@ fun CourseColumnFragment(
                     else -> 10.sp
                 }
                 val nameStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = textColor,
                     fontSize = nameFontSize,
                     lineHeight = (nameFontSize.value + 1f).sp,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center
                 )
                 val classroomStyle = TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = textColor,
                     fontSize = roomFontSize,
                     lineHeight = (roomFontSize.value + 1f).sp,
                     fontWeight = FontWeight.Medium,
@@ -168,6 +172,7 @@ fun CourseColumnFragment(
                             }
                         }
                         .background(courseColor)
+                        .staggeredCourseBorder(enabled = isStaggered)
                         .padding(horizontal = 3.dp, vertical = 4.dp)
                 ) {
                     Column(

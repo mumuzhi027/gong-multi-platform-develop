@@ -34,7 +34,7 @@ export function request(options) {
             error.authExpired = true
             reject(error)
           } else {
-            reject(new Error(messageFrom(response.data, '用户名或密码错误')))
+            reject(new Error(messageFrom(response.data, '登录校验未通过，请核对输入或稍后重试')))
           }
           return
         }

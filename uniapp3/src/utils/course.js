@@ -13,8 +13,15 @@ const DAY_ALIASES = {
 }
 
 const COLORS = ['#FFA040', '#FF714D', '#FF7700', '#FF4000', '#55E6FF', '#88BCFF', '#F3A6FF', '#FFBDBD', '#CFB6FE', '#FFE188']
-const SUMMER_STARTS = ['08:00', '08:55', '10:10', '11:05', '14:30', '15:25', '16:40', '17:35', '19:30', '20:25', '21:20']
-const WINTER_STARTS = ['08:00', '08:55', '10:10', '11:05', '14:00', '14:55', '16:10', '17:05', '19:00', '19:55', '20:50']
+// 试行表中的“其他教学区域”，不再按旧夏/冬季作息切换。
+const REGULAR_STARTS = ['08:00', '08:55', '10:20', '11:15', '14:00', '14:55', '16:20', '17:15', '19:15', '20:10', '21:05']
+// 课程按教室使用错峰时间；周课表默认常规作息，可手动切换查看。
+const STAGGERED_STARTS = ['08:10', '09:05', '10:30', '11:25', '14:10', '15:05', '16:30', '17:25', '19:15', '20:10', '21:05']
+
+export function isStaggeredCourse(course) {
+  const location = String(course?.classroom || '').replace(/\s/g, '')
+  return ['逸夫楼', '信息科技大楼', '信息科技楼'].some((building) => location.includes(building))
+}
 
 function javaHash(value = '') {
   let hash = 0
@@ -59,10 +66,14 @@ export function courseMapSize(courseMap) {
 
 export function coursesForWeek(courseMap, week) {
   return DAYS.reduce((result, day) => {
-    result[day] = (courseMap?.[day] || []).filter((course) => {
+    const active = (courseMap?.[day] || []).filter((course) => {
       const weeks = parseWeeks(course.weeks)
       return weeks.size === 0 || weeks.has(Number(week))
     })
+    const custom = active.filter((course) => course.isCustom)
+    result[day] = active.filter((course) => course.isCustom || !custom.some((item) =>
+      Number(course.start_time) < Number(item.start_time) + Number(item.duration) &&
+      Number(item.start_time) < Number(course.start_time) + Number(course.duration)))
     return result
   }, {})
 }
@@ -72,13 +83,15 @@ export function todayCourses(courseMap, week, date = new Date()) {
 }
 
 export function courseTimes(course, date = new Date()) {
-  const starts = date.getMonth() + 1 >= 5 && date.getMonth() + 1 <= 9 ? SUMMER_STARTS : WINTER_STARTS
+  const starts = periodStarts(date, isStaggeredCourse(course))
   const start = starts[Math.max(0, Number(course?.start_time || 1) - 1)] || '--:--'
   if (start === '--:--') return [start, start]
-  const [hour, minute] = start.split(':').map(Number)
   const duration = Math.max(1, Number(course?.duration || 1))
-  const total = hour * 60 + minute + duration * 45 + (duration - 1) * 10
-  return [start, `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`]
+  const lastStart = starts[Number(course?.start_time || 1) + duration - 2]
+  if (!lastStart) return [start, '--:--']
+  const [lastHour, lastMinute] = lastStart.split(':').map(Number)
+  const end = lastHour * 60 + lastMinute + 45
+  return [start, `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`]
 }
 
 export function courseState(course, date = new Date()) {
@@ -94,6 +107,6 @@ export function stateColor(state) {
   return { finished: '#2FB8BE', during: '#F8931D', upcoming: '#EF5C66' }[state] || '#EF5C66'
 }
 
-export function periodStarts(date = new Date()) {
-  return date.getMonth() + 1 >= 5 && date.getMonth() + 1 <= 9 ? SUMMER_STARTS : WINTER_STARTS
+export function periodStarts(date = new Date(), staggered = false) {
+  return staggered ? STAGGERED_STARTS : REGULAR_STARTS
 }

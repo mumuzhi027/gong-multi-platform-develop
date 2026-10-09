@@ -152,14 +152,17 @@ function onTouchEnd(event) {
 </template>
 
 <style scoped lang="scss">
-.classroom-page { height: 100vh; overflow: hidden; padding-top: var(--status-bar-height); }
+/* #ifdef H5 */
+.room-list{height:calc(var(--app-height) - var(--status-bar-height) - 300rpx - var(--nav-height))!important}
+/* #endif */
+.classroom-page { height: var(--app-height, 100vh); overflow: hidden; padding-top: var(--status-bar-height); }
 .date-row { display: flex; height: 66rpx; padding: 0 40rpx 10rpx; align-items: flex-end; }
-.date-title { font-size: 46rpx; font-weight: 800; }
-.day-label { margin-left: 20rpx; color: #515151; font-size: 31rpx; font-weight: 800; }
+.date-title { font-size: 46rpx; font-weight: 800; line-height: 1.2; }
+.day-label { margin-left: 20rpx; color: #515151; font-size: 31rpx; font-weight: 800; line-height: 1.2; }
 .day-tabs { position: relative; display: flex; height: 74rpx; }
 .day-tabs > view:not(.day-indicator) { padding: 8rpx 0; flex: 1; color: #515151; font-size: 30rpx; text-align: center; }
 .day-indicator { position: absolute; bottom: 0; left: calc(25% - 100rpx); width: 200rpx; height: 16rpx; border-radius: 10rpx; background: var(--primary); transition: transform .25s; }
-.day-indicator.right { transform: translateX(375rpx); }
+.day-indicator.right{left:calc(75% - 100rpx);transform:none}
 .location-scroll { width: 100%; height: 80rpx; margin-top: 20rpx; white-space: nowrap; }
 .location-list { display: inline-flex; padding: 10rpx 40rpx; }
 .location-chip { min-width: 142rpx; padding: 4rpx 24rpx; border-radius: 40rpx; color: #171717; font-size: 29rpx; font-weight: 800; text-align: center; }
@@ -169,7 +172,7 @@ function onTouchEnd(event) {
 .period-filters { display: flex; padding-left: 16rpx; flex: 1; }
 .period-chip { display: flex; min-width: 0; height: 42rpx; margin: 0 10rpx; flex: 1; align-items: center; justify-content: center; border-radius: 40rpx; color: #515151; font-size: 25rpx; }
 .period-chip.active { color: #171717; background: var(--primary); }
-.room-list { height: calc(100vh - var(--status-bar-height) - 406rpx - env(safe-area-inset-bottom)); padding: 10rpx 30rpx; }
+.room-list { height: calc(var(--app-height, 100vh) - var(--status-bar-height) - 406rpx - var(--safe-area-bottom)); padding: 10rpx 30rpx; }
 .room-row { display: flex; height: 74rpx; padding: 4rpx 0; align-items: center; }
 .room-name { width: 137rpx; padding-right: 4rpx; overflow: hidden; color: #171717; font-size: 27rpx; white-space: nowrap; }
 .room-name text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

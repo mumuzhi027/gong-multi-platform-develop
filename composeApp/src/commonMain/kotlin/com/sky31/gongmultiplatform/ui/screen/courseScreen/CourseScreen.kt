@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,10 +39,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.ui.viewModel.CourseViewModel
-import com.sky31.gongmultiplatform.util.CustomTime
+import com.sky31.gongmultiplatform.util.DataState
 import com.sky31.gongmultiplatform.util.TokenState
-import com.sky31.gongmultiplatform.util.customTimeToString
-import com.sky31.gongmultiplatform.util.getStartTime
 import com.sky31.gongmultiplatform.util.reverseWeekdayNameMap
 import com.sky31.gongmultiplatform.util.weekdayNameMapCN
 import kotlinx.coroutines.launch
@@ -59,6 +57,8 @@ fun CourseScreen() {
     val currentTime by viewModel.currentTime.collectAsState()
     val currentWeekNum by viewModel.currentWeekNum.collectAsState()
     val calendar by viewModel.calendar.collectAsState()
+    val courseMapState by viewModel.courseMapState.collectAsState()
+    val staggeredTimeGroups by viewModel.staggeredTimeGroups.collectAsState()
     val today = currentTime.date
 
     var refreshing by remember { mutableStateOf(false) }
@@ -105,10 +105,38 @@ fun CourseScreen() {
                 .padding(innerPadding),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
+                // 分页课表使用 weight 分配剩余高度，父容器必须保留有限的高度约束。
+                // verticalScroll 会让高度变成无限，分页区域会被测量为零高。
+                modifier = Modifier.fillMaxSize()
+            ) courseContent@{
+                if (calendar == null || calendar!!.weeks <= 0 ||
+                    runCatching { LocalDate.parse(calendar!!.start) }.isFailure
+                ) {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (refreshing || courseMapState is DataState.Loading) {
+                                CircularProgressIndicator()
+                                Spacer(Modifier.height(12.dp))
+                                Text("正在加载课表", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                Text("暂无校历数据，无法显示课表", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(12.dp))
+                                Button(onClick = {
+                                    scope.launch {
+                                        if (TokenState.requestVerificationIfOffline()) return@launch
+                                        refreshing = true
+                                        try {
+                                            viewModel.update()
+                                        } finally {
+                                            refreshing = false
+                                        }
+                                    }
+                                }) { Text("重新加载") }
+                            }
+                        }
+                    }
+                    return@courseContent
+                }
                 HorizontalPager(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -128,64 +156,15 @@ fun CourseScreen() {
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.background),
                         ) {
-                            Column(
+                            CourseTimeAxis(
+                                date = weekStart,
+                                staggeredGroups = staggeredTimeGroups,
+                                onToggleGroup = viewModel::toggleTimeGroup,
+                                onToggleAll = viewModel::toggleAllTimes,
                                 modifier = Modifier
                                     .width(42.dp)
-                                    .fillMaxHeight(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                val startTime = getStartTime(weekStart)
-
-                                Box(
-                                    modifier = Modifier
-                                        .height(40.dp)
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surface),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${weekStart.month.ordinal + 1}",
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                startTime.forEachIndexed { index, start ->
-                                    val end = CustomTime(
-                                        hour = start.hour + (start.minute + 45) / 60,
-                                        minute = (start.minute + 45) % 60
-                                    )
-
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxWidth()
-                                            .padding(vertical = 1.dp)
-                                            .background(MaterialTheme.colorScheme.surface),
-                                        verticalArrangement = Arrangement.SpaceEvenly,
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = customTimeToString(start),
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                        Text(
-                                            text = customTimeToString(end),
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
-
-                                    if (index == 3 || index == 7) {
-                                        Spacer(
-                                            modifier = Modifier
-                                                .height(5.dp)
-                                                .fillMaxWidth()
-                                                .background(MaterialTheme.colorScheme.primary)
-                                        )
-                                    }
-                                }
-                            }
+                                    .fillMaxHeight()
+                            )
 
                             courseMap!!.keys.forEachIndexed { index, item ->
                                 val date = calendarStart.plus(DatePeriod(days = page * 7 + index))

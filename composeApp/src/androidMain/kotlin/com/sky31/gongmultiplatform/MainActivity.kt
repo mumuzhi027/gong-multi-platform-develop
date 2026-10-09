@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.sky31.gongmultiplatform.network.service.InstallService
+import com.sky31.gongmultiplatform.network.service.UpdateInstallWorker
 import com.sky31.gongmultiplatform.util.PermissionHelper
 import com.sky31.gongmultiplatform.util.setCourseAlarm
 import java.lang.ref.WeakReference
@@ -47,6 +48,11 @@ class MainActivity: ComponentActivity() {
         }.onFailure {
             println("Failed to refresh course alarms on resume: ${it.message}")
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) UpdateInstallWorker.enqueue(applicationContext)
     }
 }
 

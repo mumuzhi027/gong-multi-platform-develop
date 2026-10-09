@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -56,6 +55,8 @@ import com.sky31.gongmultiplatform.util.customTimeToString
 import com.sky31.gongmultiplatform.util.getCourseColor
 import com.sky31.gongmultiplatform.util.getCourseState
 import com.sky31.gongmultiplatform.util.getCourseTime
+import com.sky31.gongmultiplatform.util.isStaggeredCourse
+import com.sky31.gongmultiplatform.ui.component.staggeredCourseBorder
 import gongmultiplatform.composeapp.generated.resources.Res
 import gongmultiplatform.composeapp.generated.resources.baseline_refresh_24
 import gongmultiplatform.composeapp.generated.resources.course
@@ -271,13 +272,13 @@ fun CourseBoxElem(
     currentTime: LocalDateTime
 ) {
     // 课程容器bar的颜色
-    val courseColor = remember(currentTime) {
-        val courseState = getCourseState(currentTime, course.startTime, course.duration)
+    val courseColor = remember(course, currentTime) {
+        val courseState = getCourseState(currentTime, course)
         getCourseColor(courseState)
     }
 
     // 课程时间
-    val courseTime = remember { mutableStateOf(getCourseTime(course, currentTime)) }
+    val courseTime = remember(course, currentTime.date) { getCourseTime(course, currentTime) }
 
     Row(
         modifier = Modifier
@@ -291,7 +292,7 @@ fun CourseBoxElem(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Text(
-                text = customTimeToString(courseTime.value[0]),
+                text = customTimeToString(courseTime[0]),
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -303,7 +304,7 @@ fun CourseBoxElem(
             )
 
             Text(
-                text = customTimeToString(courseTime.value[1]),
+                text = customTimeToString(courseTime[1]),
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -337,6 +338,7 @@ fun CourseBoxElem(
                 .padding(vertical = 5.dp)
                 .clip(RoundedCornerShape(15.dp))
                 .background(MaterialTheme.colorScheme.inverseOnSurface)
+                .staggeredCourseBorder(enabled = course.isStaggeredCourse(), cornerRadius = 15.dp)
                 .padding(horizontal = 15.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

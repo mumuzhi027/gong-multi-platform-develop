@@ -31,6 +31,8 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.ImageProvider
+import com.sky31.gongmultiplatform.R
 import com.sky31.gongmultiplatform.data.local.AppDatabase
 import com.sky31.gongmultiplatform.MainActivity
 import com.sky31.gongmultiplatform.data.local.getAppDatabase
@@ -40,6 +42,7 @@ import com.sky31.gongmultiplatform.db.getDatabaseBuilder
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.util.getCourseList
 import com.sky31.gongmultiplatform.util.getCourseTime
+import com.sky31.gongmultiplatform.util.isStaggeredCourse
 import com.sky31.gongmultiplatform.util.toWeekdayNameCN
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -194,6 +197,8 @@ class CoursesAppWidget: GlanceAppWidget() {
         currentTime: LocalDateTime
     ) {
         val courseTime = getCourseTime(course, currentTime)
+        val isStaggered = course.isStaggeredCourse()
+        val textColor = GlanceTheme.colors.onBackground
 
         Row(
             modifier = GlanceModifier
@@ -228,71 +233,77 @@ class CoursesAppWidget: GlanceAppWidget() {
                     .defaultWeight()
                     .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
             ) {
-                Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .cornerRadius(8.dp)
-                        .background(GlanceTheme.colors.inverseOnSurface)
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = GlanceModifier.fillMaxSize().cornerRadius(8.dp)
+                        .then(if (isStaggered) GlanceModifier.background(ImageProvider(R.drawable.staggered_course_border)) else GlanceModifier)
+                        .padding(if (isStaggered) 3.dp else 0.dp)
                 ) {
-                    Text(
-                        text = course.name,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onBackground,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        maxLines = 1,
-                    )
-
-                    Row(
+                    Column(
+                        modifier = GlanceModifier
+                            .fillMaxSize()
+                            .cornerRadius(if (isStaggered) 5.dp else 8.dp)
+                            .background(GlanceTheme.colors.inverseOnSurface)
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "第${course.startTime}-${course.startTime + course.duration - 1}节",
+                            text = course.name,
                             style = TextStyle(
-                                color = GlanceTheme.colors.onBackground,
-                                fontSize = 8.sp,
-                            )
+                                color = textColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 1,
                         )
 
-                        Spacer(
-                            modifier = GlanceModifier
-                                .width(10.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "第${course.startTime}-${course.startTime + course.duration - 1}节",
+                                style = TextStyle(
+                                    color = textColor,
+                                    fontSize = 8.sp,
+                                )
+                            )
+
+                            Spacer(
+                                modifier = GlanceModifier
+                                    .width(10.dp)
+                            )
+
+                            Text(
+                                text = "${courseTime[0].hour.toString().padStart(2, '0')}:${courseTime[0].minute.toString().padStart(2, '0')}",
+                                style = TextStyle(
+                                    color = textColor,
+                                    fontSize = 8.sp,
+                                )
+                            )
+                            Text(
+                                text = "-",
+                                style = TextStyle(
+                                    color = textColor,
+                                    fontSize = 8.sp,
+                                )
+                            )
+                            Text(
+                                text = "${courseTime[1].hour.toString().padStart(2, '0')}:${courseTime[1].minute.toString().padStart(2, '0')}",
+                                style = TextStyle(
+                                    color = textColor,
+                                    fontSize = 8.sp,
+                                )
+                            )
+                        }
 
                         Text(
-                            text = "${courseTime[0].hour.toString().padStart(2, '0')}:${courseTime[0].minute.toString().padStart(2, '0')}",
+                            text = course.classroom,
                             style = TextStyle(
-                                color = GlanceTheme.colors.onBackground,
+                                color = GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = 8.sp,
-                            )
-                        )
-                        Text(
-                            text = "-",
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onBackground,
-                                fontSize = 8.sp,
-                            )
-                        )
-                        Text(
-                            text = "${courseTime[1].hour.toString().padStart(2, '0')}:${courseTime[1].minute.toString().padStart(2, '0')}",
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onBackground,
-                                fontSize = 8.sp,
-                            )
+                            ),
+                            maxLines = 1,
                         )
                     }
-
-                    Text(
-                        text = course.classroom,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 8.sp,
-                        ),
-                        maxLines = 1,
-                    )
                 }
             }
         }

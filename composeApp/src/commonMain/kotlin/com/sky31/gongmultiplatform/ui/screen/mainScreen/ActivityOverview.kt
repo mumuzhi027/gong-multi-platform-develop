@@ -30,6 +30,10 @@ fun ActivityOverview(
     val activities by viewModel.activities.collectAsState()
     val today = currentActivityDate()
     val currentActivities = activities.filterNot { it.isPastActivity(today) }
+    val showingPastActivities = currentActivities.isEmpty() && activities.isNotEmpty()
+    val recentActivities = currentActivities.ifEmpty {
+        activities.sortedByDescending { it.endDate.replace('.', '-') }
+    }.take(3)
 
     Column(modifier = modifier) {
         Row(
@@ -39,7 +43,7 @@ fun ActivityOverview(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "校园活动",
+                text = if (showingPastActivities) "往期活动" else "校园活动",
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -56,7 +60,7 @@ fun ActivityOverview(
         }
 
         ActivityPosterCarousel(
-            activities = currentActivities.take(3),
+            activities = recentActivities,
             onActivityClick = { activity -> toActivityDetail(activity.id) },
             modifier = Modifier
                 .fillMaxWidth()

@@ -11,6 +11,8 @@ import com.sky31.gongmultiplatform.util.PlatformInfo
 import com.sky31.gongmultiplatform.util.createEncryptedSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.getValue
@@ -26,7 +28,10 @@ class SettingViewModel: ViewModel(), KoinComponent {
         createEncryptedSettings(settingsFactory, name = "app_update")
     }
 
-    private val _updateData = MutableStateFlow<UpdateDto?>(null)
+    private val updateJson = Json { ignoreUnknownKeys = true }
+    private val _updateData = MutableStateFlow<UpdateDto?>(runCatching {
+        updateSettings.getStringOrNull(KEY_LAST_UPDATE)?.let { updateJson.decodeFromString<UpdateDto>(it) }
+    }.getOrNull())
     val updateData = _updateData.asStateFlow()
 
     private val _topBarTitle = MutableStateFlow("")
@@ -98,6 +103,9 @@ class SettingViewModel: ViewModel(), KoinComponent {
         when(result) {
             is NetworkResult.Success -> {
                 _updateData.value = result.data
+                runCatching {
+                    updateSettings.putString(KEY_LAST_UPDATE, updateJson.encodeToString(result.data))
+                }.onFailure { println("Failed to persist update metadata: ${it.message}") }
                 return DataState.Newest
             }
             is NetworkResult.Error -> {
@@ -107,6 +115,7 @@ class SettingViewModel: ViewModel(), KoinComponent {
     }
 
     private companion object {
+        const val KEY_LAST_UPDATE = "last_update_metadata"
         const val KEY_SKIPPED_VERSION = "skipped_update_version"
         const val KEY_SKIP_UNTIL = "skipped_update_until"
         const val ONE_WEEK_MILLIS = 7 * 24 * 60 * 60 * 1000L

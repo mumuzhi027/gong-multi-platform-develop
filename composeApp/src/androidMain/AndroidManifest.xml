@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
@@ -30,6 +31,13 @@
         </activity>
 
         <receiver android:name=".receiver.CourseReminderReceiver" />
+
+        <receiver android:name=".network.service.UpdateInstallReceiver" android:exported="false" />
+        <receiver android:name=".network.service.UpdateDownloadReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
 
         <receiver android:name=".receiver.DailyScheduleReceiver" />
 
