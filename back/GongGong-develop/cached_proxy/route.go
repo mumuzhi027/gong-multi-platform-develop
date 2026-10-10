@@ -305,7 +305,7 @@ func CoursesConvertCalendar(list *feign.CourseList, calendar *feign.TeachingCale
 	ical.SetTimezone(icalendar.GetDefaultTimezone())
 	timetable := calendar.GetTermTimeTable()
 	for _, course := range list.Courses {
-		if course.Weeks == "" || course.Day == "" || course.StartTime == 0 || course.Duration == 0 {
+		if course.Weeks == "" || feign.Days2Int[course.Day] == 0 || course.StartTime < 1 || course.Duration < 1 || course.StartTime+course.Duration-1 > 12 {
 			continue
 		}
 		weeks := strings.Split(course.Weeks, ",")
@@ -352,6 +352,10 @@ func CoursesConvertCalendar(list *feign.CourseList, calendar *feign.TeachingCale
 func convertCourseToEvent(course feign.Course, calendar *feign.TeachingCalendar, start int, end int, timetable feign.TimeTable) *icalendar.IcsEvent {
 	summary := fmt.Sprintf("%s %s", CourseSummaryPrefix, course.Name)
 	desc := fmt.Sprintf("授课教师：%s  %d节课\\n周次：%s\\n%s", course.Teacher, course.Duration, course.Weeks, CourseDescSummarySuffix)
+	if course.IsExperiment {
+		summary = fmt.Sprintf("【实验课】 %s", course.Name)
+		desc += fmt.Sprintf("\\n实验项目：%s\\n实验分组：%s", course.ExperimentProject, course.ExperimentGroup)
+	}
 	location := &icalendar.IcsLocation{}
 	location.SetName(course.Classroom)
 	event := icalendar.IcsEvent{}
@@ -360,19 +364,30 @@ func convertCourseToEvent(course feign.Course, calendar *feign.TeachingCalendar,
 	event.SetLocation(location)
 	date := calendar.StartTime().AddDate(0, 0, (start-1)*7+feign.Days2Int[course.Day]-1)
 	tb := timetable.EventTimes
-	startAt := tb[course.StartTime-1].StartTime
-	endAt := tb[course.StartTime+course.Duration-2].EndTime
-	startTime := time.Date(date.Year(), date.Month(), date.Day(), startAt.Hour(), startAt.Minute(), startAt.Second(), 0, time.Local)
-	endTime := time.Date(date.Year(), date.Month(), date.Day(), endAt.Hour(), endAt.Minute(), endAt.Second(), 0, time.Local)
-	event.SetStart(startTime)
-	event.SetEnd(endTime)
+	unknownTime := course.StartTime+course.Duration-1 > len(tb)
+	if unknownTime {
+		// 第12节尚无确认钟点，保留日期和节次，不推测时间。
+		event.SetAllDay(true)
+		event.SetStart(date)
+		event.SetEnd(date.AddDate(0, 0, 1))
+		event.SetDescription(desc + fmt.Sprintf("\\n第%d-%d节（具体钟点待确认）", course.StartTime, course.StartTime+course.Duration-1))
+	} else {
+		startAt := tb[course.StartTime-1].StartTime
+		endAt := tb[course.StartTime+course.Duration-2].EndTime
+		startTime := time.Date(date.Year(), date.Month(), date.Day(), startAt.Hour(), startAt.Minute(), startAt.Second(), 0, time.Local)
+		endTime := time.Date(date.Year(), date.Month(), date.Day(), endAt.Hour(), endAt.Minute(), endAt.Second(), 0, time.Local)
+		event.SetStart(startTime)
+		event.SetEnd(endTime)
+	}
 	rrule := &icalendar.IcsRepeatRule{}
 	rrule.SetFrequency("WEEKLY")
 	rrule.SetInterval(1)
 	rrule.SetCount(end - start + 1)
 	event.SetRepeatRule(rrule)
-	for _, a := range DefaultCourseAlarms {
-		event.AddAlarm(a)
+	if !unknownTime {
+		for _, a := range DefaultCourseAlarms {
+			event.AddAlarm(a)
+		}
 	}
 	return &event
 }

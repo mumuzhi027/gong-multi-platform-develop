@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, existsSync, writeFileSync, readdirSync } from 
 import { resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { cleanupTestBrowser } from './cleanup-test-browser.mjs'
 
 // A disposable Edge profile and the built-in DevTools protocol avoid extra dependencies.
 const artifactDir = fileURLToPath(new URL('../../tmp/pwa-check/', import.meta.url))
@@ -411,7 +412,6 @@ try {
   }
   throw error
 } finally {
-  socket?.close()
-  browser.kill()
+  await cleanupTestBrowser({ browser, socket, send, profile, artifacts: artifactDir })
   for (const task of pending.values()) clearTimeout(task.timeout)
 }

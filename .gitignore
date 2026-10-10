@@ -20,3 +20,26 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Frontend outputs and local dependency caches
+dist/
+.npm-cache/
+
+# Deployment packages
+*.apk
+*.aab
+*.ipa
+/uniapp3/gong-pwa*.zip
+
+# Local configuration (keep examples in version control)
+.env
+.env.*
+!.env.example
+
+# Local verification artifacts and databases
+/tmp/
+/tmp_db/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/

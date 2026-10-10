@@ -45,6 +45,10 @@ class CourseInfo(BaseModel):
     """结束上课节次"""
     day: str = "Monday"
     """星期"""
+    is_experiment: bool = False
+    experiment_id: str = ""
+    experiment_project: str = ""
+    experiment_group: str = ""
 
 
 def _get_day_no(weekday: str):

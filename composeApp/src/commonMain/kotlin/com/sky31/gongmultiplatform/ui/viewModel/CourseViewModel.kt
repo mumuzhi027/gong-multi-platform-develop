@@ -11,6 +11,7 @@ import com.sky31.gongmultiplatform.network.repository.CourseRepositoryImpl
 import com.sky31.gongmultiplatform.network.repository.PublicRepositoryImpl
 import com.sky31.gongmultiplatform.util.DataState
 import com.sky31.gongmultiplatform.util.COURSE_TIME_GROUP_MASK
+import com.sky31.gongmultiplatform.util.CourseTimeDisplay
 import com.sky31.gongmultiplatform.util.MAX_COURSE_WEEK
 import com.sky31.gongmultiplatform.util.NetworkResult
 import com.sky31.gongmultiplatform.util.Toast
@@ -20,6 +21,7 @@ import com.sky31.gongmultiplatform.util.createEncryptedSettings
 import com.sky31.gongmultiplatform.util.formatWeeksRange
 import com.sky31.gongmultiplatform.util.getWeekNum
 import com.sky31.gongmultiplatform.util.visibleCoursesForWeek
+import com.sky31.gongmultiplatform.util.timetableCoursesForWeek
 import com.sky31.gongmultiplatform.util.safeApiCallsSequential
 import com.sky31.gongmultiplatform.util.scheduleCourseAlarm
 import com.sky31.gongmultiplatform.util.toCourseMap
@@ -50,28 +52,28 @@ class CourseViewModel: ViewModel(), KoinComponent {
     private val timeAxisSettings: Settings by lazy {
         createEncryptedSettings(settingsFactory, name = "course_time_axis")
     }
-    // 同步读取本地设置，首次打开就显示上次选择，避免先闪回常规模式。
-    private val _staggeredTimeGroups = MutableStateFlow(runCatching {
+    // 保留上次时间轴分组，课程默认以混合模式完整显示。
+    private val _timeDisplay = MutableStateFlow(CourseTimeDisplay(staggeredGroups = runCatching {
         timeAxisSettings.getInt("staggered_groups", defaultValue = 0)
             .takeIf { it in 0..COURSE_TIME_GROUP_MASK } ?: 0
     }.getOrElse {
         println("Failed to read course time axis preference: ${it.message}")
         0
-    })
-    val staggeredTimeGroups = _staggeredTimeGroups.asStateFlow()
+    }))
+    val timeDisplay = _timeDisplay.asStateFlow()
 
     fun toggleTimeGroup(group: Int) {
         if (group !in 0..5) return
-        saveTimeGroups(_staggeredTimeGroups.value xor (1 shl group))
+        saveTimeDisplay(_timeDisplay.value.toggleGroup(group))
     }
 
     fun toggleAllTimes() {
-        saveTimeGroups(if (_staggeredTimeGroups.value == COURSE_TIME_GROUP_MASK) 0 else COURSE_TIME_GROUP_MASK)
+        saveTimeDisplay(_timeDisplay.value.cycle())
     }
 
-    private fun saveTimeGroups(groups: Int) {
-        val value = groups and COURSE_TIME_GROUP_MASK
-        _staggeredTimeGroups.value = value
+    private fun saveTimeDisplay(display: CourseTimeDisplay) {
+        val value = display.staggeredGroups and COURSE_TIME_GROUP_MASK
+        _timeDisplay.value = display.copy(staggeredGroups = value)
         // 点击时立即写入独立的本地偏好，离开页面不依赖协程或页面销毁回调。
         runCatching { timeAxisSettings.putInt("staggered_groups", value) }.onFailure {
             println("Failed to save course time axis preference: ${it.message}")
@@ -201,7 +203,7 @@ class CourseViewModel: ViewModel(), KoinComponent {
             val resultMap = mutableMapOf<String, List<CourseElem>>()
 
             weekdayNameMap.values.forEach { weekday ->
-                val courseList = visibleCoursesForWeek(weekNum, courseMap[weekday].orEmpty())
+                val courseList = timetableCoursesForWeek(weekNum, courseMap[weekday].orEmpty())
 
                 resultMap[weekday] = courseList
             }

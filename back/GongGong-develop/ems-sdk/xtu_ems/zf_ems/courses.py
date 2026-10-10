@@ -1,10 +1,13 @@
 import datetime
+import logging
+import aiohttp
 
 from xtu_ems.common.exception import *
 from xtu_ems.common.model import CourseList, CourseInfo
 from xtu_ems.common.sess import HttpSessionHolder
 from xtu_ems.common.term import get_term_year, get_term_id
 from xtu_ems.zf_ems.config import *
+from xtu_ems.zf_ems.experimental_courses import get_experimental_courses
 
 
 def parse_course_time(courses_list) -> CourseList:
@@ -94,4 +97,13 @@ async def get_courses(session: HttpSessionHolder, year=None, term=None) -> Cours
             if response.status != 200:
                 raise SessionInvalidException("Failed to fetch courses")
             result = await response.json()
-            return parse_course_time(result['kbList'])
+            courses = parse_course_time(result['kbList'])
+        try:
+            experiments = await get_experimental_courses(http_session, year, payload_term)
+            courses.courses.extend(experiments.courses)
+        except SessionInvalidException:
+            raise
+        except (aiohttp.ClientError, TimeoutError, ValueError, RuntimeError) as error:
+            # 实验课是可选查询，不让无此模块或临时故障影响基础课表。
+            logging.getLogger(__name__).warning("Experimental course query unavailable: %s", type(error).__name__)
+        return courses

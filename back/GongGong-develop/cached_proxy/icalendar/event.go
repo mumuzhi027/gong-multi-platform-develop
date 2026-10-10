@@ -14,6 +14,7 @@ type IcsEvent struct {
 	alarms      []Alarm
 	repeatRule  RepeatRule
 	dtStamp     time.Time
+	allDay      bool
 }
 
 func (e *IcsEvent) uid() string {
@@ -35,10 +36,18 @@ func (e *IcsEvent) ToIcs(timezone *Timezone) string {
 		result.WriteString(e.location.ToIcs(timezone) + "\n")
 	}
 	if !e.start.IsZero() {
-		result.WriteString("DTSTART" + TimeToIcs(e.start, timezone, ":") + "\n")
+		if e.allDay {
+			result.WriteString("DTSTART;VALUE=DATE:" + e.start.Format("20060102") + "\n")
+		} else {
+			result.WriteString("DTSTART" + TimeToIcs(e.start, timezone, ":") + "\n")
+		}
 	}
 	if !e.end.IsZero() {
-		result.WriteString("DTEND" + TimeToIcs(e.end, timezone, ":") + "\n")
+		if e.allDay {
+			result.WriteString("DTEND;VALUE=DATE:" + e.end.Format("20060102") + "\n")
+		} else {
+			result.WriteString("DTEND" + TimeToIcs(e.end, timezone, ":") + "\n")
+		}
 	}
 	for _, alarm := range e.alarms {
 		result.WriteString(alarm.ToIcs(timezone))
@@ -65,6 +74,10 @@ func (e *IcsEvent) SetLocation(location Location) {
 
 func (e *IcsEvent) SetStart(start time.Time) {
 	e.start = start
+}
+
+func (e *IcsEvent) SetAllDay(allDay bool) {
+	e.allDay = allDay
 }
 
 func (e *IcsEvent) SetEnd(end time.Time) {

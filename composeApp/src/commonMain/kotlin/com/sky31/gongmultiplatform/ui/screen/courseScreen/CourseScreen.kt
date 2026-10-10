@@ -58,7 +58,7 @@ fun CourseScreen() {
     val currentWeekNum by viewModel.currentWeekNum.collectAsState()
     val calendar by viewModel.calendar.collectAsState()
     val courseMapState by viewModel.courseMapState.collectAsState()
-    val staggeredTimeGroups by viewModel.staggeredTimeGroups.collectAsState()
+    val timeDisplay by viewModel.timeDisplay.collectAsState()
     val today = currentTime.date
 
     var refreshing by remember { mutableStateOf(false) }
@@ -150,6 +150,7 @@ fun CourseScreen() {
                     }
                     if (calendar != null && courseMap != null && calendarStart != null) {
                         val weekStart = calendarStart.plus(DatePeriod(days = page * 7))
+                        val periodCount = if (courseMap!!.values.flatten().any { it.startTime + it.duration - 1 >= 12 }) 12 else 11
 
                         Row(
                             modifier = Modifier
@@ -158,7 +159,9 @@ fun CourseScreen() {
                         ) {
                             CourseTimeAxis(
                                 date = weekStart,
-                                staggeredGroups = staggeredTimeGroups,
+                                staggeredGroups = timeDisplay.staggeredGroups,
+                                mode = timeDisplay.mode,
+                                periodCount = periodCount,
                                 onToggleGroup = viewModel::toggleTimeGroup,
                                 onToggleAll = viewModel::toggleAllTimes,
                                 modifier = Modifier
@@ -198,7 +201,9 @@ fun CourseScreen() {
                                     highlighted = isTodayColumn,
                                     highlightColor = todayTint,
                                     day = item,
-                                    week = page.toLong() + 1
+                                    week = page.toLong() + 1,
+                                    timeMode = timeDisplay.mode,
+                                    periodCount = periodCount
                                 ) {
                                     Column(
                                         modifier = Modifier

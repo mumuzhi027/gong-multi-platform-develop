@@ -183,6 +183,9 @@ class CourseDataRepositoryImpl(
             classroom == other.classroom &&
             startTime == other.startTime &&
             duration == other.duration &&
+            isExperiment == other.isExperiment &&
+            experimentId == other.experimentId &&
+            experimentProject == other.experimentProject &&
             day == other.day
 
     private fun CourseElem.activeWeeks(): Set<Long> =

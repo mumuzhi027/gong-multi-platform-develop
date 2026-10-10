@@ -4,6 +4,7 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { cleanupTestBrowser } from './cleanup-test-browser.mjs'
 
 // Exercise real Vue inputs and uni.request, but intercept every API request.
 // Dummy credentials never reach either the public server or school service.
@@ -108,7 +109,6 @@ try {
   writeFileSync(resolve(artifacts, 'login-result.json'), JSON.stringify({ origin: process.env.PWA_LOGIN_TEST_ORIGIN || 'http://127.0.0.1:4173/', checks, successNavigation: true, failures }, null, 2))
   console.log('Login browser checks passed: real input-to-request encoding, special characters preserved, no old bearer token, mocked rejection and success navigation. No real login attempted.')
 } finally {
-  socket?.close()
-  browser.kill()
+  await cleanupTestBrowser({ browser, socket, send, profile, artifacts })
   for (const task of pending.values()) clearTimeout(task.timeout)
 }

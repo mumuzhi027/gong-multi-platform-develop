@@ -13,13 +13,17 @@ type LoginResponse struct {
 }
 
 type Course struct {
-	Name      string `json:"name"`
-	Teacher   string `json:"teacher"`
-	Classroom string `json:"classroom"`
-	Weeks     string `json:"weeks"`
-	StartTime int    `json:"start_time"`
-	Duration  int    `json:"duration"`
-	Day       string `json:"day"`
+	Name              string `json:"name"`
+	Teacher           string `json:"teacher"`
+	Classroom         string `json:"classroom"`
+	Weeks             string `json:"weeks"`
+	StartTime         int    `json:"start_time"`
+	Duration          int    `json:"duration"`
+	Day               string `json:"day"`
+	IsExperiment      bool   `json:"is_experiment"`
+	ExperimentID      string `json:"experiment_id"`
+	ExperimentProject string `json:"experiment_project"`
+	ExperimentGroup   string `json:"experiment_group"`
 }
 
 var Days2Int = map[string]int{
@@ -114,10 +118,10 @@ type Rank struct {
 	ClassRank           int      `json:"class_rank"`
 	MajorRank           int      `json:"major_rank"`
 	WeightedAverageRank int      `json:"weighted_average_rank"`
-	StudentType          string   `json:"student_type"`
-	TotalPeople          int      `json:"total_people"`
-	TotalScoreRank       int      `json:"total_score_rank"`
-	DegreeCourseRank     int      `json:"degree_course_rank"`
-	GpaRank              int      `json:"gpa_rank"`
+	StudentType         string   `json:"student_type"`
+	TotalPeople         int      `json:"total_people"`
+	TotalScoreRank      int      `json:"total_score_rank"`
+	DegreeCourseRank    int      `json:"degree_course_rank"`
+	GpaRank             int      `json:"gpa_rank"`
 	Terms               []string `json:"terms"`
 }

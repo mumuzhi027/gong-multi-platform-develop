@@ -18,6 +18,8 @@
     "test:pwa": "node scripts/test-pwa.mjs",
     "test:ios-viewport": "node scripts/test-ios-viewport.mjs",
     "test:courses": "node scripts/test-local-courses.mjs",
+    "test:course-display": "node scripts/test-course-time-display.mjs",
+    "test:experimental-courses": "node scripts/test-experimental-courses.mjs",
     "build:mp-weixin": "uni build -p mp-weixin"
   },
   "dependencies": {

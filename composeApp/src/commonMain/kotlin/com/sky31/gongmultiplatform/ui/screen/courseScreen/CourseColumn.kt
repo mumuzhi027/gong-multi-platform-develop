@@ -16,18 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.ui.theme.CourseColor
 import com.sky31.gongmultiplatform.ui.viewModel.CourseViewModel
-import com.sky31.gongmultiplatform.util.isStaggeredCourse
-import com.sky31.gongmultiplatform.ui.component.staggeredCourseBorder
+import com.sky31.gongmultiplatform.util.CourseTimeMode
+import com.sky31.gongmultiplatform.util.courseSlots
 
 fun generateCourseColor(courseName: String): Color {
     val colors = CourseColor.entries.toTypedArray()
@@ -44,6 +40,8 @@ fun CourseColumn(
     highlightColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
     day: String,
     week: Long,
+    timeMode: CourseTimeMode = CourseTimeMode.MIXED,
+    periodCount: Int = 11,
     content: @Composable () -> Unit
 ) {
     Box(modifier = modifier) {
@@ -69,6 +67,7 @@ fun CourseColumn(
                 end = 4,
                 day = day,
                 week = week,
+                timeMode = timeMode,
                 modifier = Modifier.weight(4f)
             )
 
@@ -80,6 +79,7 @@ fun CourseColumn(
                 end = 8,
                 day = day,
                 week = week,
+                timeMode = timeMode,
                 modifier = Modifier.weight(4f)
             )
 
@@ -88,10 +88,11 @@ fun CourseColumn(
             CourseColumnFragment(
                 courseList = courseList,
                 start = 9,
-                end = 11,
+                end = periodCount,
                 day = day,
                 week = week,
-                modifier = Modifier.weight(3f)
+                timeMode = timeMode,
+                modifier = Modifier.weight((periodCount - 8).toFloat())
             )
         }
     }
@@ -104,112 +105,38 @@ fun CourseColumnFragment(
     start: Int,
     end: Int,
     day: String,
-    week: Long
+    week: Long,
+    timeMode: CourseTimeMode = CourseTimeMode.MIXED
 ) {
     val viewModel: CourseViewModel = viewModel { CourseViewModel() }
 
     Column(modifier = modifier) {
         var index = start
-        courseList
-            .filter { course -> course.startTime in start..end }
-            .forEach { course ->
-                if (course.startTime < index) return@forEach
-                val isStaggered = course.isStaggeredCourse()
-                val courseColor = generateCourseColor(course.name)
-                val textColor = MaterialTheme.colorScheme.onSurface
-                val longestTextLength = maxOf(course.name.length, course.classroom.length)
-                val nameFontSize = when {
-                    course.duration >= 3 -> 12.sp
-                    course.duration == 2 -> 11.sp
-                    longestTextLength >= 11 -> 9.5.sp
-                    longestTextLength >= 8 -> 10.sp
-                    else -> 11.sp
-                }
-                val roomFontSize = when {
-                    course.duration >= 3 -> 11.sp
-                    course.duration == 2 -> 10.sp
-                    longestTextLength >= 11 -> 9.sp
-                    longestTextLength >= 8 -> 9.5.sp
-                    else -> 10.sp
-                }
-                val nameStyle = TextStyle(
-                    color = textColor,
-                    fontSize = nameFontSize,
-                    lineHeight = (nameFontSize.value + 1f).sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
-                val classroomStyle = TextStyle(
-                    color = textColor,
-                    fontSize = roomFontSize,
-                    lineHeight = (roomFontSize.value + 1f).sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-                val nameMaxLines = if (course.duration >= 2) 4 else 3
-                val classroomMaxLines = if (course.duration >= 2) 4 else 3
-
-                if (course.startTime > index) {
-                    repeat(course.startTime - index) { offset ->
-                        val slot = index + offset
-                        EmptyCourseSlot(
-                            modifier = Modifier.weight(1f),
-                            onClick = { viewModel.openEditor(day, week, slot) }
-                        )
+        courseSlots(courseList, start, end).forEach { slot ->
+            if (slot.startTime > index) {
+                repeat(slot.startTime - index) { offset ->
+                    val period = index + offset
+                    EmptyCourseSlot(Modifier.weight(1f)) {
+                        if (period <= 11) viewModel.openEditor(day, week, period)
                     }
                 }
-
-                Column(
-                    modifier = Modifier
-                        .weight(minOf(course.duration, end - course.startTime + 1).toFloat())
-                        .padding(horizontal = 2.dp, vertical = 3.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable {
-                            if (course.isCustom) viewModel.openEditor(day, week, course.startTime, course)
-                            else {
-                                viewModel.setSheetCourse(course, week)
-                                viewModel.showSheet()
-                            }
-                        }
-                        .background(courseColor)
-                        .staggeredCourseBorder(enabled = isStaggered)
-                        .padding(horizontal = 3.dp, vertical = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-                    ) {
-                        Text(
-                            text = course.name,
-                            maxLines = nameMaxLines,
-                            overflow = TextOverflow.Ellipsis,
-                            style = nameStyle
-                        )
-
-                        if (course.classroom.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = course.classroom,
-                                style = classroomStyle,
-                                maxLines = classroomMaxLines,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-
-                index = course.startTime + course.duration
             }
+            CourseSlotCard(slot, week, timeMode, onOpen = { course ->
+                if (course.isCustom) viewModel.openEditor(day, week, course.startTime, course)
+                else {
+                    viewModel.setSheetCourse(course, week)
+                    viewModel.showSheet()
+                }
+            }, modifier = Modifier.weight(slot.duration.toFloat()))
+            index = slot.startTime + slot.duration
+        }
 
         if (index <= end) {
             repeat(end - index + 1) { offset ->
                 val slot = index + offset
                 EmptyCourseSlot(
                     modifier = Modifier.weight(1f),
-                    onClick = { viewModel.openEditor(day, week, slot) }
+                    onClick = { if (slot <= 11) viewModel.openEditor(day, week, slot) }
                 )
             }
         }

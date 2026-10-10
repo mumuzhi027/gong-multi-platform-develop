@@ -1,7 +1,9 @@
 import { parseWeeks } from './date'
 
 export function courseIdentity(course) {
-  return JSON.stringify([course.day, course.name, course.teacher || '', course.classroom || '', Number(course.start_time), Number(course.duration)])
+  const identity = [course.day, course.name, course.teacher || '', course.classroom || '', Number(course.start_time), Number(course.duration)]
+  if (course.is_experiment || course.isExperiment) identity.push('experiment', course.experiment_id || course.experimentId || '', course.experiment_project || course.experimentProject || '')
+  return JSON.stringify(identity)
 }
 
 export function coursesOverlap(a, b) {

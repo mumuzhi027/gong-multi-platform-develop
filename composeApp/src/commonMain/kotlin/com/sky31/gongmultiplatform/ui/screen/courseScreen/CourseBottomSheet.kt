@@ -1,6 +1,10 @@
 package com.sky31.gongmultiplatform.ui.screen.courseScreen
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,6 +22,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sky31.gongmultiplatform.ui.viewModel.CourseViewModel
@@ -63,6 +69,16 @@ fun CourseBottomSheet() {
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium
                     )
+                    if (it.isExperiment) {
+                        Text("实验课", color = Color(0xFF315369), fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                .background(Color(0xFF85CDFA).copy(alpha = .16f), RoundedCornerShape(3.dp))
+                                .border(BorderStroke(.5.dp, Color(0xFF171717).copy(alpha = .12f)), RoundedCornerShape(3.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.5.dp),
+                            style = MaterialTheme.typography.labelMedium)
+                        if (it.experimentProject.isNotBlank()) Text("实验项目：${it.experimentProject}", modifier = Modifier.padding(top = 4.dp))
+                        if (it.experimentGroup.isNotBlank()) Text("实验分组：${it.experimentGroup}", modifier = Modifier.padding(top = 4.dp))
+                    }
 
                     Row(
                         modifier = Modifier

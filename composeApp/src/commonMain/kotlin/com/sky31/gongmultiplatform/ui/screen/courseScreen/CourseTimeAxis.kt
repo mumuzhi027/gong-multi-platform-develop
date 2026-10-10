@@ -30,7 +30,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.sky31.gongmultiplatform.di.LocalIsDarkTheme
 import com.sky31.gongmultiplatform.util.CustomTime
-import com.sky31.gongmultiplatform.util.COURSE_TIME_GROUP_MASK
+import com.sky31.gongmultiplatform.util.CourseTimeMode
 import com.sky31.gongmultiplatform.util.customTimeToString
 import com.sky31.gongmultiplatform.util.getStartTime
 import kotlinx.datetime.LocalDate
@@ -40,6 +40,8 @@ import kotlinx.datetime.LocalDate
 internal fun CourseTimeAxis(
     date: LocalDate,
     staggeredGroups: Int,
+    mode: CourseTimeMode,
+    periodCount: Int = 11,
     onToggleGroup: (Int) -> Unit,
     onToggleAll: () -> Unit,
     modifier: Modifier = Modifier
@@ -51,12 +53,7 @@ internal fun CourseTimeAxis(
     val selectedText = if (dark) Color(0xFFB6E4FF) else Color(0xFF135379)
     val normalBackground = MaterialTheme.colorScheme.surface
     val normalText = MaterialTheme.colorScheme.onSurface
-    val mode = when (staggeredGroups) {
-        0 -> "常规"
-        COURSE_TIME_GROUP_MASK -> "错峰"
-        else -> "混合"
-    }
-    val nextMode = if (staggeredGroups == COURSE_TIME_GROUP_MASK) "常规" else "错峰"
+    val nextMode = mode.next().label
     val headerBackground by animateColorAsState(
         if (staggeredGroups == 0) normalBackground else selectedBackground,
         animationSpec = tween(260), label = "timeAxisHeaderBackground"
@@ -69,15 +66,15 @@ internal fun CourseTimeAxis(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(4.dp))
                 .background(headerBackground)
-                .semantics { stateDescription = "${mode}时段" }
+                .semantics { stateDescription = "${mode.label}时段" }
                 .clickable(role = Role.Button, onClickLabel = "整列切换为${nextMode}时段", onClick = onToggleAll),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Crossfade(targetState = mode, animationSpec = tween(240), label = "timeAxisMode") { label ->
+            Crossfade(targetState = mode.label, animationSpec = tween(240), label = "timeAxisMode") { label ->
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text(label, style = MaterialTheme.typography.labelSmall,
-                        color = if (label == "常规") normalText else selectedText)
+                        color = if (staggeredGroups == 0) normalText else selectedText)
                 }
             }
             Text("${date.month.ordinal + 1}月", style = MaterialTheme.typography.labelSmall,
@@ -86,7 +83,7 @@ internal fun CourseTimeAxis(
 
         repeat(6) { group ->
             val firstPeriod = group * 2
-            val count = minOf(2, regularStarts.size - firstPeriod)
+            val count = minOf(2, periodCount - firstPeriod)
             val enabled = (staggeredGroups and (1 shl group)) != 0
             val periodLabel = if (count == 2) "第${firstPeriod + 1}–${firstPeriod + 2}节" else "第${firstPeriod + 1}节"
             val groupBackground by animateColorAsState(
@@ -94,10 +91,10 @@ internal fun CourseTimeAxis(
                 animationSpec = tween(260), label = "timeAxisGroupBackground"
             )
             val displayedStarts = if (enabled) staggeredStarts else regularStarts
-            val lastStart = displayedStarts[firstPeriod + count - 1]
-            val endMinutes = lastStart.hour * 60 + lastStart.minute + 45
+            val lastStart = displayedStarts.getOrNull(firstPeriod + count - 1)
+            val endMinutes = lastStart?.let { it.hour * 60 + it.minute + 45 }
             val range = customTimeToString(displayedStarts[firstPeriod]) + "至" +
-                customTimeToString(CustomTime(endMinutes / 60, endMinutes % 60))
+                (endMinutes?.let { customTimeToString(CustomTime(it / 60, it % 60)) } ?: "第12节")
 
             Box(
                 modifier = Modifier
@@ -119,18 +116,20 @@ internal fun CourseTimeAxis(
                     val starts = if (staggered) staggeredStarts else regularStarts
                     Column(Modifier.fillMaxSize()) {
                         repeat(count) { offset ->
-                            val start = starts[firstPeriod + offset]
-                            val end = start.hour * 60 + start.minute + 45
+                            val start = starts.getOrNull(firstPeriod + offset)
+                            val end = start?.let { it.hour * 60 + it.minute + 45 }
                             Column(
                                 modifier = Modifier.weight(1f).fillMaxWidth(),
                                 verticalArrangement = Arrangement.SpaceEvenly,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(customTimeToString(start), style = MaterialTheme.typography.labelSmall,
-                                    color = if (staggered) selectedText else normalText)
-                                Text(customTimeToString(CustomTime(end / 60, end % 60)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (staggered) selectedText else normalText)
+                                if (start != null && end != null) {
+                                    Text(customTimeToString(start), style = MaterialTheme.typography.labelSmall,
+                                        color = if (staggered) selectedText else normalText)
+                                    Text(customTimeToString(CustomTime(end / 60, end % 60)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (staggered) selectedText else normalText)
+                                } else Text("第12节", style = MaterialTheme.typography.labelSmall, color = normalText)
                             }
                         }
                     }

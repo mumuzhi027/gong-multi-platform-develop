@@ -8,6 +8,11 @@ const emit = defineEmits(['close', 'delete'])
     <view class="sheet" @tap.stop>
       <view class="handle"></view>
       <view class="sheet-title">{{ course.name }}</view>
+      <view v-if="course.is_experiment || course.isExperiment" class="experiment-details">
+        <text class="experiment-label">实验课</text>
+        <view v-if="course.experiment_project || course.experimentProject">实验项目：{{ course.experiment_project || course.experimentProject }}</view>
+        <view v-if="course.experiment_group || course.experimentGroup">实验分组：{{ course.experiment_group || course.experimentGroup }}</view>
+      </view>
       <view class="detail-grid">
         <view><image class="detail-icon" src="/static/icons/teacher.svg" mode="aspectFit" />{{ course.teacher || '教师待定' }}</view>
         <view><image class="detail-icon" src="/static/icons/course.svg" mode="aspectFit" />{{ course.weeks || '-' }}周</view>
@@ -23,6 +28,7 @@ const emit = defineEmits(['close', 'delete'])
 </template>
 
 <style scoped lang="scss">
+.experiment-details{margin-top:16rpx;font-size:26rpx;line-height:1.6}.experiment-label{display:inline-block;margin-bottom:8rpx;padding:3rpx 10rpx;border:1rpx solid rgba(23,23,23,.12);border-radius:6rpx;background:rgba(133,205,250,.16);color:#315369;font-size:22rpx;font-weight:500}
 .sheet-host {
   position: fixed;
   z-index: 100;

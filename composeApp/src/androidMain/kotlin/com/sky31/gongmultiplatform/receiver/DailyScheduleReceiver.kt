@@ -40,7 +40,7 @@ class DailyScheduleReceiver: BroadcastReceiver(), KoinComponent {
             if (!config.courseNotification) return@launch
             getCourseList()?.let {
                 for(course in it) {
-                    val startTime = startTimes[course.startTime - 1]
+                    val startTime = startTimes.getOrNull(course.startTime - 1) ?: continue
                     val triggerMillis = getTriggerMillis(
                         startTime.hour,
                         startTime.minute,

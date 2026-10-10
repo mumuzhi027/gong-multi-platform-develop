@@ -42,6 +42,7 @@ import com.sky31.gongmultiplatform.db.getDatabaseBuilder
 import com.sky31.gongmultiplatform.model.CourseElem
 import com.sky31.gongmultiplatform.util.getCourseList
 import com.sky31.gongmultiplatform.util.getCourseTime
+import com.sky31.gongmultiplatform.util.customTimeToString
 import com.sky31.gongmultiplatform.util.isStaggeredCourse
 import com.sky31.gongmultiplatform.util.toWeekdayNameCN
 import kotlinx.datetime.LocalDateTime
@@ -273,7 +274,7 @@ class CoursesAppWidget: GlanceAppWidget() {
                             )
 
                             Text(
-                                text = "${courseTime[0].hour.toString().padStart(2, '0')}:${courseTime[0].minute.toString().padStart(2, '0')}",
+                                text = customTimeToString(courseTime[0]),
                                 style = TextStyle(
                                     color = textColor,
                                     fontSize = 8.sp,
@@ -287,7 +288,7 @@ class CoursesAppWidget: GlanceAppWidget() {
                                 )
                             )
                             Text(
-                                text = "${courseTime[1].hour.toString().padStart(2, '0')}:${courseTime[1].minute.toString().padStart(2, '0')}",
+                                text = customTimeToString(courseTime[1]),
                                 style = TextStyle(
                                     color = textColor,
                                     fontSize = 8.sp,

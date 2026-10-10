@@ -79,16 +79,26 @@ export function coursesForWeek(courseMap, week) {
 }
 
 export function todayCourses(courseMap, week, date = new Date()) {
-  return coursesForWeek(courseMap, week)[DAYS[(date.getDay() + 6) % 7]] || []
+  const courses = coursesForWeek(courseMap, week)[DAYS[(date.getDay() + 6) % 7]] || []
+  const occupied = new Set()
+  return [...courses].sort((a,b) => Number(Boolean(b.isCustom)) - Number(Boolean(a.isCustom)) ||
+    Number(Boolean(b.is_experiment || b.isExperiment)) - Number(Boolean(a.is_experiment || a.isExperiment)) || Number(a.start_time) - Number(b.start_time))
+    .filter(course => {
+      const slots = Array.from({length:Number(course.duration)},(_,index)=>Number(course.start_time)+index)
+      if(slots.some(period=>occupied.has(period))) return false
+      slots.forEach(period=>occupied.add(period))
+      return true
+    }).sort((a,b)=>Number(a.start_time)-Number(b.start_time))
 }
 
 export function courseTimes(course, date = new Date()) {
   const starts = periodStarts(date, isStaggeredCourse(course))
-  const start = starts[Math.max(0, Number(course?.start_time || 1) - 1)] || '--:--'
+  const firstPeriod = Number(course?.start_time || 1)
+  const start = starts[Math.max(0, firstPeriod - 1)] || `第${firstPeriod}节`
   if (start === '--:--') return [start, start]
   const duration = Math.max(1, Number(course?.duration || 1))
   const lastStart = starts[Number(course?.start_time || 1) + duration - 2]
-  if (!lastStart) return [start, '--:--']
+  if (!lastStart) return [start, `第${firstPeriod + duration - 1}节`]
   const [lastHour, lastMinute] = lastStart.split(':').map(Number)
   const end = lastHour * 60 + lastMinute + 45
   return [start, `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`]
@@ -98,6 +108,8 @@ export function courseState(course, date = new Date()) {
   const [start, end] = courseTimes(course, date)
   const minutes = date.getHours() * 60 + date.getMinutes()
   const toMinutes = (value) => value.split(':').map(Number).reduce((sum, item, index) => sum + item * (index ? 1 : 60), 0)
+  if (start.includes('节')) return 'upcoming'
+  if (end.includes('节')) return minutes < toMinutes(start) ? 'upcoming' : 'during'
   if (minutes > toMinutes(end)) return 'finished'
   if (minutes < toMinutes(start)) return 'upcoming'
   return 'during'

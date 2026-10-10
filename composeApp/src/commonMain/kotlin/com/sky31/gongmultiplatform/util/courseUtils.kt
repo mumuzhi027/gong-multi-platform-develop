@@ -28,7 +28,8 @@ val weekdayNameMapCN = mapOf(
 
 data class CustomTime(
     val hour: Int,
-    val minute: Int
+    val minute: Int,
+    val period: Int? = null
 )
 
 // 1–2、3–4、5–6、7–8、9–10 及第 11 节的六个时间轴查看分组。
@@ -103,11 +104,11 @@ fun getCourseList(courseMap: Map<String, List<CourseElem>>, calendar: CalendarDa
 
 /** 同一节次只展示一门课程，保留原始数据以便后续恢复或修改。 */
 fun visibleCoursesForWeek(week: Long, courses: List<CourseElem>): List<CourseElem> {
-    val occupied = BooleanArray(12)
+    val occupied = BooleanArray(13)
     val visible = mutableListOf<CourseElem>()
     val candidates = courses
         .filter { it.isValidForSchedule() && isInThisWeek(week, it) }
-        .sortedWith(compareByDescending<CourseElem> { it.isCustom }.thenBy { it.startTime })
+        .sortedWith(compareByDescending<CourseElem> { it.isCustom }.thenByDescending { it.isExperiment }.thenBy { it.startTime })
 
     for (course in candidates) {
         val slots = course.startTime until (course.startTime + course.duration)
@@ -193,9 +194,9 @@ fun isInThisWeek(week: Long, course: CourseElem): Boolean {
 
 fun CourseElem.isValidForSchedule(): Boolean =
     day in weekdayNameMap.values &&
-        startTime in 1..11 &&
+        startTime in 1..(if (isExperiment) 12 else 11) &&
         duration > 0 &&
-        startTime + duration - 1 <= 11 &&
+        startTime + duration - 1 <= (if (isExperiment) 12 else 11) &&
         name.isNotBlank()
 
 /**
@@ -220,7 +221,10 @@ fun getCourseState(currentTime: LocalDateTime, course: CourseElem): CourseState 
 
 private fun courseStateAt(currentTime: LocalDateTime, times: List<CustomTime>): CourseState {
     val (start, end) = times
+    // 第12节没有确认的钟点，显示节次，不推测结束时间。
+    if (start.period != null) return CourseState.After
     val currentMinutes = currentTime.hour * 60 + currentTime.minute
+    if (end.period != null) return if (currentMinutes < start.hour * 60 + start.minute) CourseState.After else CourseState.During
     return when {
         currentMinutes < start.hour * 60 + start.minute -> CourseState.After
         currentMinutes > end.hour * 60 + end.minute -> CourseState.Before
@@ -243,9 +247,11 @@ fun getCourseTime(course: CourseElem, currentTime: LocalDateTime): List<CustomTi
 
 private fun coursePeriodTimes(start: Int, duration: Int, starts: List<CustomTime>): List<CustomTime> {
     // 两种作息都从最后一节的起点取结束时间，完整包含连堂课间的大休息。
-    val lastStart = starts[start + duration - 2]
+    val first = starts.getOrNull(start - 1) ?: CustomTime(0, 0, period = start)
+    val lastStart = starts.getOrNull(start + duration - 2)
+        ?: return listOf(first, CustomTime(0, 0, period = start + duration - 1))
     val endMinutes = lastStart.hour * 60 + lastStart.minute + 45
-    return listOf(starts[start - 1], CustomTime(endMinutes / 60, endMinutes % 60))
+    return listOf(first, CustomTime(endMinutes / 60, endMinutes % 60))
 }
 
 /**
@@ -254,6 +260,7 @@ private fun coursePeriodTimes(start: Int, duration: Int, starts: List<CustomTime
  * @param customTime 自定义时间
  */
 fun customTimeToString(customTime: CustomTime): String {
+    customTime.period?.let { return "第${it}节" }
     return "${customTime.hour.let { if(it >= 10) it else "0${it}" } }:${customTime.minute.let { if(it >= 10) it else "0${it}" }}"
 }
 
